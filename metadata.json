@@ -1,0 +1,5 @@
+{
+  "name": "Gemini 3 Pro DeepThink Clone",
+  "description": "A high-fidelity clone of the Gemini 3 Pro interface featuring DeepThink reasoning capabilities, adjustable thinking budgets, and real-time streaming responses.",
+  "requestFramePermissions": []
+}
