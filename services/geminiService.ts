@@ -1,6 +1,7 @@
 
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { Message, ModelConfig, GeminiModel, Hypothesis, ThinkingProcess, ExecutionStep } from '../types';
+import * as Prompts from './prompts';
 
 // Initialize the API client
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
@@ -22,7 +23,7 @@ const getThinkingBudget = (level: 'low' | 'medium' | 'high'): number => {
 /**
  * THE DEEPTHINK ORCHESTRATOR
  */
-const orchestrateDeepThink = async (
+export const orchestrateDeepThink = async (
   history: Message[],
   currentMessage: string,
   config: ModelConfig,
@@ -71,15 +72,9 @@ const orchestrateDeepThink = async (
     
     onUsage({ flash: 1, pro: 0 });
 
-    const divergencePrompt = `
-      Analyze the User Query and generate 3 distinct, mutually exclusive strategic approaches.
-      Return valid JSON array only: [{"id": "h1", "title": "...", "description": "..."}]
-      User Query: ${currentMessage}
-    `;
-
     const divergenceResponse = await ai.models.generateContent({
       model: GeminiModel.FLASH_3_PREVIEW,
-      contents: divergencePrompt,
+      contents: Prompts.GET_DIVERGENCE_PROMPT(currentMessage),
       config: { responseMimeType: 'application/json' }
     });
 
@@ -90,18 +85,15 @@ const orchestrateDeepThink = async (
         hypotheses = [{ id: "default", title: "Standard Analysis", description: "Direct execution.", confidence: 0, reasoning: "" }];
     }
     
-    updateTraceStep(divStepId, { status: 'complete', thoughts: "Strategies generated.", result: hypotheses });
+    updateTraceStep(divStepId, { status: 'complete', thoughts: `Generated ${hypotheses.length} strategic paths.`, result: hypotheses });
     updateState({ state: 'verifying', hypotheses });
 
-    // PHASE 2: VERIFICATION (Parallel)
-    const verificationPromises = hypotheses.map(async (h) => {
-      const stepId = generateId();
-      addTraceStep({ id: stepId, phase: 'Verification', title: `Verifying: ${h.title}`, status: 'running' });
+    // PHASE 2: VERIFICATION
+    const verifySingle = async (h: Hypothesis, stepId: string): Promise<Hypothesis> => {
       onUsage({ flash: 1, pro: 0 });
-
       const res = await ai.models.generateContent({
         model: GeminiModel.FLASH_3_PREVIEW,
-        contents: `Evaluate this approach for: "${currentMessage}". Approach: "${h.description}". Return JSON: {"confidence": 0.0-1.0, "reasoning": "..."}`,
+        contents: Prompts.GET_VERIFICATION_PROMPT(currentMessage, h.description),
         config: { responseMimeType: 'application/json' }
       });
       
@@ -110,24 +102,79 @@ const orchestrateDeepThink = async (
       
       updateTraceStep(stepId, { status: 'complete', thoughts: evalResult.reasoning, result: evalResult });
       return { ...h, confidence: evalResult.confidence, reasoning: evalResult.reasoning };
+    };
+
+    const hWithSteps = hypotheses.map(h => ({ ...h, stepId: generateId() }));
+    hWithSteps.forEach(h => {
+      addTraceStep({ id: h.stepId, phase: 'Verification', title: `Verifying: ${h.title}`, status: 'running' });
     });
 
-    const verifiedHypotheses = await Promise.all(verificationPromises);
+    let verifiedHypotheses: Hypothesis[] = [];
+
+    try {
+      verifiedHypotheses = await Promise.all(hWithSteps.map(h => verifySingle(h, h.stepId)));
+    } catch (error: any) {
+      const errorStr = (error?.message || '').toLowerCase();
+      const isRateLimit = error?.status === 429 || errorStr.includes('429') || errorStr.includes('quota') || errorStr.includes('too many');
+
+      if (isRateLimit) {
+        updateState({ logs: [...processState.logs, "Rate limit hit. Switching to Batch Recovery Mode (3 at a time)..."] });
+        verifiedHypotheses = [];
+        for (let i = 0; i < hWithSteps.length; i += 3) {
+          const batch = hWithSteps.slice(i, i + 3);
+          hWithSteps.slice(i + 3).forEach(h => updateTraceStep(h.stepId, { status: 'pending' }));
+          const batchResults = await Promise.all(batch.map(h => {
+            updateTraceStep(h.stepId, { status: 'running' });
+            return verifySingle(h, h.stepId);
+          }));
+          verifiedHypotheses.push(...batchResults);
+          updateState({ hypotheses: [...verifiedHypotheses] }); 
+          if (i + 3 < hWithSteps.length) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+          }
+        }
+      } else {
+        throw error;
+      }
+    }
 
     // PHASE 3: SELECTION
     updateState({ state: 'selecting', hypotheses: verifiedHypotheses });
     const winner = verifiedHypotheses.reduce((prev, curr) => (prev.confidence > curr.confidence) ? prev : curr);
 
     const selStepId = generateId();
-    addTraceStep({ id: selStepId, phase: 'Selection', title: 'Winner Selected', status: 'complete', thoughts: `Best path: ${winner.title}`, result: winner });
+    addTraceStep({ id: selStepId, phase: 'Selection', title: 'Strategy Selection', status: 'complete', thoughts: `Best path identified: ${winner.title} (${Math.round(winner.confidence * 100)}% confidence)`, result: winner });
+    
+    // PHASE 4: SYNTHESIS BRIDGE
     updateState({ state: 'synthesizing', winnerId: winner.id });
+    const synthStepId = generateId();
+    addTraceStep({ id: synthStepId, phase: 'Synthesis', title: 'Response Blueprinting', status: 'running' });
+
+    const isPro = config.model === GeminiModel.PRO_3_PREVIEW;
+    onUsage({ flash: isPro ? 0 : 1, pro: isPro ? 1 : 0 });
+
+    const synthesisResponse = await ai.models.generateContent({
+      model: config.model,
+      contents: Prompts.GET_SYNTHESIS_PROMPT(currentMessage, winner),
+      config: { responseMimeType: 'application/json' }
+    });
+
+    let synthesisResult = { plan: ["Assemble final response based on selection"], tone: "helpful", objective: "Address user query accurately" };
+    try { synthesisResult = JSON.parse(synthesisResponse.text || "{}"); } catch(e) {}
+
+    updateTraceStep(synthStepId, { 
+      status: 'complete', 
+      thoughts: `Drafted plan with ${synthesisResult.plan?.length || 0} steps. Objective: ${synthesisResult.objective}`, 
+      result: synthesisResult 
+    });
 
     return { 
-      prompt: `Based on strategy "${winner.title}" (${winner.description}), answer: ${currentMessage}`, 
+      prompt: Prompts.GET_FINAL_GENERATION_PROMPT(currentMessage, winner.title, winner.description, synthesisResult),
       finalState: processState 
     };
 
   } catch (e) {
+    console.error("DeepThink Orchestration Error:", e);
     return { prompt: currentMessage, finalState: processState };
   }
 };
@@ -156,13 +203,15 @@ export const streamGeminiResponse = async (
   });
 
   const budget = getThinkingBudget(config.thinkingLevel);
-  const chat: Chat = ai.chats.create({
+  const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  
+  const chat: Chat = aiInstance.chats.create({
     model: config.model,
     history: history.map(m => ({ role: m.role, parts: [{ text: m.text }] })),
     config: {
       temperature: config.temperature,
       thinkingConfig: { thinkingBudget: budget },
-      maxOutputTokens: budget + 4096 // Ensure room for response
+      maxOutputTokens: budget + 8192
     },
   });
 

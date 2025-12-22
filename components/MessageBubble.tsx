@@ -1,38 +1,181 @@
+
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message, ThinkingProcess, ExecutionStep, Hypothesis } from '../types';
-import { Bot, User, AlertCircle, BrainCircuit, ChevronDown, ChevronRight, GitBranch, Terminal, ArrowRight, CheckCircle2, Loader2, ListTree, Lightbulb } from 'lucide-react';
+import { Bot, User, AlertCircle, BrainCircuit, ChevronDown, ChevronRight, CheckCircle2, Lightbulb, BarChart3, ClipboardCheck } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
   isThinking?: boolean;
 }
 
-const PhaseIcon = ({ phase, status }: { phase: string, status: string }) => {
-  if (status === 'running') return <Loader2 size={16} className="animate-spin text-[#a8c7fa]" />;
-  if (status === 'failed') return <AlertCircle size={16} className="text-red-400" />;
-  
-  switch(phase) {
-    case 'Divergence': return <ListTree size={16} className="text-[#a8c7fa]" />;
-    case 'Verification': return <CheckCircle2 size={16} className="text-[#a8c7fa]" />;
-    case 'Selection': return <GitBranch size={16} className="text-[#a8c7fa]" />;
-    default: return <Terminal size={16} className="text-gray-400" />;
+/**
+ * DeepThinkResultCard
+ * A decoupled component responsible for rendering the specific output of an AI reasoning step.
+ */
+const DeepThinkResultCard: React.FC<{
+  variant: 'hypothesis' | 'verification' | 'selection' | 'synthesis';
+  data: any;
+}> = ({ variant, data }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  if (!data) return null;
+
+  const toggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExpanded(!isExpanded);
+  };
+
+  switch (variant) {
+    case 'hypothesis':
+      return (
+        <div 
+          className="group bg-[#1e1f20] rounded-xl border border-[#444746] hover:border-[#a8c7fa] hover:bg-[#282a2c] transition-all cursor-pointer overflow-hidden"
+          onClick={toggle}
+        >
+          <div className="p-3 flex items-center gap-3">
+            <div className="flex-none">
+              <div className="w-5 h-5 rounded-full bg-[#004a77] flex items-center justify-center text-[#c2e7ff]">
+                <Lightbulb size={12} />
+              </div>
+            </div>
+            <div className="flex-1 font-semibold text-xs text-[#e3e3e3] group-hover:text-[#a8c7fa] transition-colors truncate">
+              {data.title}
+            </div>
+            <div className="flex-none text-gray-500">
+              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </div>
+          </div>
+          {isExpanded && (
+            <div className="px-3 pb-4 ml-8 animate-fadeIn">
+              <div className="text-xs text-gray-400 leading-relaxed border-l border-[#444746] pl-3">
+                {data.description}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+    case 'verification':
+      return (
+        <div 
+          className="bg-[#282a2c]/30 rounded-xl border border-[#444746] hover:border-gray-500 transition-all cursor-pointer overflow-hidden"
+          onClick={toggle}
+        >
+          <div className="p-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <BarChart3 size={14} className="text-gray-500" />
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Verification Score</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="font-mono text-xs font-bold text-[#a8c7fa]">
+                {Math.round((data.confidence || 0) * 100)}%
+              </span>
+              <div className="text-gray-500">
+                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </div>
+            </div>
+          </div>
+          {isExpanded && (
+            <div className="px-3 pb-3 animate-fadeIn space-y-3">
+              <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-[#a8c7fa] transition-all duration-500"
+                  style={{ width: `${(data.confidence || 0) * 100}%` }}
+                ></div>
+              </div>
+              {data.reasoning && (
+                <div className="text-[10px] text-gray-400 italic leading-snug bg-black/20 p-2 rounded border border-[#444746]">
+                  {data.reasoning}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+
+    case 'selection':
+      return (
+        <div 
+          className="bg-[#004a77]/20 border border-[#a8c7fa] rounded-xl relative overflow-hidden cursor-pointer hover:bg-[#004a77]/30 transition-all"
+          onClick={toggle}
+        >
+          <div className="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+            <CheckCircle2 size={48} className="text-[#a8c7fa]" />
+          </div>
+          <div className="p-4 flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <div className="px-2 py-0.5 rounded bg-[#a8c7fa] text-black text-[9px] font-black uppercase tracking-widest">
+                Winning Strategy
+              </div>
+              <div className="text-[#a8c7fa]">
+                {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </div>
+            </div>
+            <div className="text-sm font-bold text-white mt-1 truncate pr-8">
+              {data.title}
+            </div>
+          </div>
+          {isExpanded && (
+            <div className="px-4 pb-4 animate-fadeIn">
+              <div className="text-xs text-gray-300 leading-relaxed border-t border-[#a8c7fa]/20 pt-3">
+                {data.reasoning}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+    case 'synthesis':
+      return (
+        <div 
+          className="bg-[#1e1f20] border-l-2 border-[#a8c7fa] rounded-r-xl overflow-hidden cursor-pointer hover:bg-[#282a2c] transition-all"
+          onClick={toggle}
+        >
+          <div className="p-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <ClipboardCheck size={14} className="text-[#a8c7fa]" />
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Execution Blueprint</span>
+            </div>
+            <div className="text-gray-500">
+              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            </div>
+          </div>
+          {isExpanded && (
+            <div className="px-3 pb-3 animate-fadeIn space-y-3">
+              <div className="flex items-center gap-2 text-[10px] text-gray-400">
+                 <span className="font-mono text-[#a8c7fa] bg-[#004a77] px-1.5 py-0.5 rounded uppercase">{data.tone}</span>
+                 <span>Target Tone</span>
+              </div>
+              <div className="space-y-1.5 pl-1">
+                {data.plan?.map((step: string, i: number) => (
+                  <div key={i} className="flex gap-2 text-xs text-gray-300 items-start">
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#a8c7fa] mt-1.5 flex-none" />
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+
+    default:
+      return null;
   }
 };
 
 const TraceStepViewer: React.FC<{ step: ExecutionStep }> = ({ step }) => {
-  const [isOpen, setIsOpen] = useState(step.status === 'running' || step.phase === 'Divergence');
+  const [isOpen, setIsOpen] = useState(step.status === 'running' || step.phase === 'Divergence' || step.phase === 'Synthesis');
 
   return (
     <div className="border-l-2 border-[#444746] pl-4 pb-6 relative last:pb-0">
-      {/* Timeline Dot */}
       <div className={`absolute -left-[9px] top-0 w-4 h-4 rounded-full border-2 border-[#1e1f20] ${
         step.status === 'complete' ? 'bg-[#a8c7fa]' : 
         step.status === 'running' ? 'bg-[#a8c7fa] animate-pulse' : 'bg-gray-600'
       }`}></div>
 
-      {/* Header */}
       <div 
         className="flex items-center gap-2 mb-2 cursor-pointer hover:opacity-80 transition-opacity"
         onClick={() => setIsOpen(!isOpen)}
@@ -43,11 +186,8 @@ const TraceStepViewer: React.FC<{ step: ExecutionStep }> = ({ step }) => {
         {isOpen ? <ChevronDown size={14} className="text-gray-500 ml-auto" /> : <ChevronRight size={14} className="text-gray-500 ml-auto" />}
       </div>
 
-      {/* Content */}
       {isOpen && (
         <div className="space-y-4 animate-fadeIn">
-          
-          {/* Internal Monologue / Thoughts */}
           {step.thoughts && (
             <div className="bg-[#131314] rounded-lg border border-[#444746] overflow-hidden">
               <div className="bg-[#282a2c] px-3 py-1.5 flex items-center gap-2 border-b border-[#444746]">
@@ -60,52 +200,19 @@ const TraceStepViewer: React.FC<{ step: ExecutionStep }> = ({ step }) => {
             </div>
           )}
 
-          {/* Structured Result Visualization */}
-          {step.result && step.phase === 'Divergence' && Array.isArray(step.result) && (
+          {step.result && (
             <div className="grid gap-3 mt-2">
-              {step.result.map((h: Hypothesis) => (
-                <div key={h.id} className="group relative bg-[#1e1f20] p-4 rounded-xl border border-[#444746] hover:border-[#a8c7fa] hover:bg-[#282a2c] transition-all">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-none mt-0.5">
-                       <div className="w-5 h-5 rounded-full bg-[#004a77] flex items-center justify-center text-[#c2e7ff]">
-                         <Lightbulb size={12} />
-                       </div>
-                    </div>
-                    <div>
-                       <div className="font-semibold text-sm text-[#e3e3e3] mb-1 group-hover:text-[#a8c7fa] transition-colors">{h.title}</div>
-                       <div className="text-xs text-gray-400 leading-relaxed">{h.description}</div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {step.result && step.phase === 'Verification' && (
-             <div className="flex items-center gap-3 bg-[#282a2c]/30 p-2 rounded border border-[#444746]">
-               <div className="text-xs text-gray-400">Confidence Score:</div>
-               <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-[#a8c7fa]" 
-                    style={{ width: `${(step.result.confidence || 0) * 100}%` }}
-                  ></div>
-               </div>
-               <div className="font-mono text-xs font-bold text-[#a8c7fa]">{Math.round((step.result.confidence || 0) * 100)}%</div>
-             </div>
-          )}
-          
-          {step.result && step.phase === 'Selection' && (
-            <div className="bg-[#004a77]/20 border border-[#a8c7fa] p-4 rounded-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-2 opacity-10">
-                 <CheckCircle2 size={64} className="text-[#a8c7fa]" />
-              </div>
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2">
-                   <div className="px-2 py-0.5 rounded bg-[#a8c7fa] text-black text-[10px] font-bold uppercase tracking-wider">Winning Strategy</div>
-                </div>
-                <div className="text-sm font-bold text-white text-lg mb-2">{step.result.title}</div>
-                <div className="text-xs text-gray-300 leading-relaxed">{step.result.reasoning}</div>
-              </div>
+              {step.phase === 'Divergence' && Array.isArray(step.result) ? (
+                step.result.map((h: Hypothesis) => (
+                  <DeepThinkResultCard key={h.id} variant="hypothesis" data={h} />
+                ))
+              ) : step.phase === 'Verification' ? (
+                <DeepThinkResultCard variant="verification" data={step.result} />
+              ) : step.phase === 'Selection' ? (
+                <DeepThinkResultCard variant="selection" data={step.result} />
+              ) : step.phase === 'Synthesis' ? (
+                <DeepThinkResultCard variant="synthesis" data={step.result} />
+              ) : null}
             </div>
           )}
         </div>
@@ -119,7 +226,7 @@ const ThinkingVisualizer: React.FC<{ process: ThinkingProcess }> = ({ process })
 
   if (!process || process.trace.length === 0) return null;
 
-  const isComplete = process.state === 'complete' || process.state === 'synthesizing';
+  const isComplete = process.state === 'complete';
   
   return (
     <div className="mb-6 rounded-xl overflow-hidden border border-[#444746] bg-[#1e1f20] w-full max-w-2xl shadow-lg">
@@ -149,7 +256,6 @@ const ThinkingVisualizer: React.FC<{ process: ThinkingProcess }> = ({ process })
            {process.trace.map((step) => (
              <TraceStepViewer key={step.id} step={step} />
            ))}
-           
            {process.state !== 'complete' && (
              <div className="border-l-2 border-[#444746] pl-4 pt-1 flex items-center gap-2 text-xs text-gray-500 animate-pulse">
                <div className="w-2 h-2 rounded-full bg-[#a8c7fa]"></div>
@@ -183,20 +289,15 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isThinking }) =>
         <div className="font-medium text-sm text-gray-400 mb-2 flex items-center gap-2">
           {isUser ? 'You' : 'Gemini 3 Pro'}
         </div>
-        
-        {/* DeepThink Visualizer */}
         {!isUser && message.thinkingProcess && (
           <ThinkingVisualizer process={message.thinkingProcess} />
         )}
-
-        {/* Fallback Loading State */}
         {!isUser && isThinking && !message.thinkingProcess && !message.text && (
            <div className="flex items-center gap-2 text-sm text-gray-500 animate-pulse mb-2">
               <BrainCircuit size={16} />
               <span>Thinking...</span>
            </div>
         )}
-
         <div className="markdown-body prose prose-invert max-w-none text-[15px] leading-relaxed text-[#e3e3e3]">
           {message.text ? (
             <ReactMarkdown remarkPlugins={[remarkGfm]}>
