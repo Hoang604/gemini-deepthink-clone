@@ -5,6 +5,16 @@ export interface Message {
   timestamp: number;
   isError?: boolean;
   thinkingProcess?: ThinkingProcess;
+  relatedArtifactId?: string; // Link message to an artifact
+}
+
+export interface Artifact {
+  id: string;
+  type: 'tsx' | 'html' | 'c' | 'python' | 'js' | 'ts' | 'project';
+  title: string;
+  content: string;
+  status: 'streaming' | 'complete';
+  isVisible: boolean;
 }
 
 export interface ThinkingProcess {
@@ -47,6 +57,7 @@ export interface ChatSession {
   id: string;
   title: string;
   messages: Message[];
+  artifacts: Artifact[]; // Store artifacts per session
   updatedAt: number;
 }
 
