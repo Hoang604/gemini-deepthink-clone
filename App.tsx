@@ -47,6 +47,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default closed on small screens
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWorkbenchOpen, setIsWorkbenchOpen] = useState(false); // Auto-opens on artifact
+  const [isWorkbenchMaximized, setIsWorkbenchMaximized] = useState(false);
   
   const [isGenerating, setIsGenerating] = useState(false);
   
@@ -104,6 +105,7 @@ const App: React.FC = () => {
     setCurrentSessionId(newSession.id);
     shouldAutoScrollRef.current = true;
     setIsWorkbenchOpen(false);
+    setIsWorkbenchMaximized(false);
   };
 
   const handleSendMessage = async () => {
@@ -194,42 +196,53 @@ const App: React.FC = () => {
       <Sidebar 
         isOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         sessions={sessions} currentSessionId={currentSessionId}
-        onSelectSession={(id) => { setCurrentSessionId(id); setIsWorkbenchOpen(!!sessions.find(s=>s.id===id)?.artifacts.length); }}
+        onSelectSession={(id) => { 
+          setCurrentSessionId(id); 
+          const sess = sessions.find(s=>s.id===id);
+          setIsWorkbenchOpen(!!sess?.artifacts.length);
+          if (!sess?.artifacts.length) setIsWorkbenchMaximized(false);
+        }}
         onNewChat={createNewSession}
         stats={stats} activeModel={config.model}
       />
 
       <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300">
-        {/* Header */}
-        <header className="flex items-center justify-between px-6 py-4 border-b border-[#444746] bg-[#131314]">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-[#282a2c] rounded-full transition-colors text-gray-400">
-              <SidebarIcon size={20} />
-            </button>
-            <span className="font-medium text-lg flex items-center gap-2">
-              Gemini 3 {config.model === GeminiModel.PRO_3_PREVIEW ? 'Pro' : 'Flash'}
-              <span className="text-[10px] bg-[#004a77] text-[#c2e7ff] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">DeepThink</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-             <button 
-                onClick={() => setIsWorkbenchOpen(!isWorkbenchOpen)} 
-                className={`p-2 rounded-full transition-colors ${isWorkbenchOpen ? 'bg-[#282a2c] text-[#a8c7fa]' : 'text-gray-400 hover:bg-[#282a2c]'}`}
-                title="Toggle Workbench"
-             >
-               <Layout size={20} />
-             </button>
-             <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-[#282a2c] rounded-full transition-colors text-[#a8c7fa]">
-               <Sparkles size={20} />
-             </button>
-          </div>
-        </header>
+        {/* Header - Only visible if not maximized */}
+        {!isWorkbenchMaximized && (
+          <header className="flex items-center justify-between px-6 py-4 border-b border-[#444746] bg-[#131314] z-20">
+            <div className="flex items-center gap-4">
+              <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className="p-2 hover:bg-[#282a2c] rounded-full transition-colors text-gray-400">
+                <SidebarIcon size={20} />
+              </button>
+              <span className="font-medium text-lg flex items-center gap-2">
+                Gemini 3 {config.model === GeminiModel.PRO_3_PREVIEW ? 'Pro' : 'Flash'}
+                <span className="text-[10px] bg-[#004a77] text-[#c2e7ff] px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">DeepThink</span>
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+               <button 
+                  onClick={() => { setIsWorkbenchOpen(!isWorkbenchOpen); if (isWorkbenchOpen) setIsWorkbenchMaximized(false); }} 
+                  className={`p-2 rounded-full transition-colors ${isWorkbenchOpen ? 'bg-[#282a2c] text-[#a8c7fa]' : 'text-gray-400 hover:bg-[#282a2c]'}`}
+                  title="Toggle Workbench"
+               >
+                 <Layout size={20} />
+               </button>
+               <button onClick={() => setIsSettingsOpen(true)} className="p-2 hover:bg-[#282a2c] rounded-full transition-colors text-[#a8c7fa]">
+                 <Sparkles size={20} />
+               </button>
+            </div>
+          </header>
+        )}
 
         {/* Main Content Area - Split View */}
         <div className="flex-1 flex overflow-hidden">
           
           {/* Left: Chat Area */}
-          <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isWorkbenchOpen ? 'max-w-[45%]' : 'max-w-full'}`}>
+          <div className={`flex flex-col min-w-0 transition-all duration-300 h-full ${
+            isWorkbenchOpen 
+              ? (isWorkbenchMaximized ? 'w-0 opacity-0 overflow-hidden pointer-events-none' : 'w-[30%] opacity-100') 
+              : 'w-full opacity-100'
+          }`}>
             <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto scroll-smooth px-4">
               {currentMessages.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center p-8 text-center opacity-50">
@@ -266,11 +279,15 @@ const App: React.FC = () => {
 
           {/* Right: Workbench Area */}
           {isWorkbenchOpen && (
-            <div className="w-[55%] h-full flex-none shadow-xl z-10">
+            <div className={`h-full flex-none shadow-xl z-10 transition-all duration-300 ${
+              isWorkbenchMaximized ? 'w-full' : 'w-[70%]'
+            }`}>
                <Workbench 
                  artifact={activeArtifact} 
                  isOpen={isWorkbenchOpen}
-                 onClose={() => setIsWorkbenchOpen(false)}
+                 onClose={() => { setIsWorkbenchOpen(false); setIsWorkbenchMaximized(false); }}
+                 isMaximized={isWorkbenchMaximized}
+                 onToggleMaximize={() => setIsWorkbenchMaximized(!isWorkbenchMaximized)}
                />
             </div>
           )}

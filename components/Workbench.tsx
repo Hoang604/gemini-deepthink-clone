@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Code2, Play, Copy, X, Terminal, FileCode, Check, Braces, FileJson } from 'lucide-react';
+import { Code2, Play, Copy, X, Terminal, FileCode, Check, Braces, Maximize2, Minimize2 } from 'lucide-react';
 import { Artifact } from '../types';
 
 interface WorkbenchProps {
   artifact: Artifact | null;
   onClose: () => void;
   isOpen: boolean;
+  isMaximized: boolean;
+  onToggleMaximize: () => void;
 }
 
-const Workbench: React.FC<WorkbenchProps> = ({ artifact, onClose, isOpen }) => {
+const Workbench: React.FC<WorkbenchProps> = ({ artifact, onClose, isOpen, isMaximized, onToggleMaximize }) => {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const [copied, setCopied] = useState(false);
 
@@ -66,7 +68,7 @@ const Workbench: React.FC<WorkbenchProps> = ({ artifact, onClose, isOpen }) => {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#1e1f20] border-l border-[#444746] animate-slideInRight">
+    <div className={`h-full flex flex-col bg-[#1e1f20] border-l border-[#444746] transition-all duration-300`}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-[#444746] bg-[#131314]">
         <div className="flex items-center gap-3 overflow-hidden">
@@ -82,8 +84,19 @@ const Workbench: React.FC<WorkbenchProps> = ({ artifact, onClose, isOpen }) => {
             </span>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-           <button onClick={onClose} className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 transition-colors">
+        <div className="flex items-center gap-1">
+           <button 
+              onClick={onToggleMaximize} 
+              className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 transition-colors"
+              title={isMaximized ? "Restore Chat" : "Maximize Workbench"}
+            >
+             {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+           </button>
+           <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 transition-colors"
+              title="Close Workbench"
+            >
              <X size={18} />
            </button>
         </div>
