@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Settings2, BrainCircuit, Zap, Thermometer, Activity, Gauge } from 'lucide-react';
+import { Settings2, BrainCircuit, Zap, Activity } from 'lucide-react';
 import { ModelConfig, GeminiModel, AppStats } from '../types';
 
 interface SettingsPanelProps {
@@ -13,10 +13,6 @@ interface SettingsPanelProps {
 
 const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onConfigChange, isOpen, onClose, stats }) => {
   if (!isOpen) return null;
-
-  const handleLevelChange = (level: 'low' | 'medium' | 'high') => {
-    onConfigChange({ ...config, thinkingLevel: level });
-  };
 
   const handleModelChange = (model: string) => {
     onConfigChange({ ...config, model });
@@ -64,41 +60,10 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onConfigChange, i
               </button>
             </div>
 
-            <div className="space-y-4 p-4 rounded-xl border border-[#444746] bg-[#282a2c]/50">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <BrainCircuit size={18} className="text-[#c2e7ff]" />
-                  <span className="font-medium text-[#c2e7ff]">Thinking Configuration</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-xs text-gray-400">
-                  <Gauge size={14} />
-                  <span>Reasoning Depth (Level)</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {(['low', 'medium', 'high'] as const).map((level) => (
-                    <button
-                      key={level}
-                      onClick={() => handleLevelChange(level)}
-                      className={`px-2 py-2 rounded-lg text-xs font-medium uppercase tracking-wide border transition-all ${
-                        config.thinkingLevel === level
-                          ? 'bg-[#a8c7fa] text-[#0b0c0c] border-[#a8c7fa]'
-                          : 'bg-[#1e1f20] text-gray-400 border-[#444746] hover:border-gray-500'
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-300">
-                  <Thermometer size={16} />
-                  <span>Creativity: {config.temperature}</span>
+                  <span className="flex-1">Creativity (Temperature)</span>
+                  <span className="font-mono text-[#a8c7fa]">{config.temperature}</span>
               </div>
               <input
                   type="range" min="0" max="2" step="0.1"

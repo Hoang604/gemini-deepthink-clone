@@ -1,9 +1,8 @@
-
 import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Message, ThinkingProcess, ExecutionStep, Hypothesis } from '../types';
-import { Bot, User, AlertCircle, BrainCircuit, ChevronDown, ChevronRight, CheckCircle2, Lightbulb, BarChart3, ClipboardCheck } from 'lucide-react';
+import { Message, ThinkingProcess, ExecutionStep, Strategy } from '../types';
+import { Bot, User, AlertCircle, BrainCircuit, ChevronDown, ChevronRight, CheckCircle2, Lightbulb, ShieldAlert } from 'lucide-react';
 
 interface MessageBubbleProps {
   message: Message;
@@ -15,7 +14,7 @@ interface MessageBubbleProps {
  * A decoupled component responsible for rendering the specific output of an AI reasoning step.
  */
 const DeepThinkResultCard: React.FC<{
-  variant: 'hypothesis' | 'verification' | 'selection' | 'synthesis';
+  variant: 'strategy' | 'critique' | 'synthesis';
   data: any;
 }> = ({ variant, data }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,7 +27,7 @@ const DeepThinkResultCard: React.FC<{
   };
 
   switch (variant) {
-    case 'hypothesis':
+    case 'strategy':
       return (
         <div 
           className="group bg-[#1e1f20] rounded-xl border border-[#444746] hover:border-[#a8c7fa] hover:bg-[#282a2c] transition-all cursor-pointer overflow-hidden"
@@ -48,46 +47,46 @@ const DeepThinkResultCard: React.FC<{
             </div>
           </div>
           {isExpanded && (
-            <div className="px-3 pb-4 ml-8 animate-fadeIn">
-              <div className="text-xs text-gray-400 leading-relaxed border-l border-[#444746] pl-3">
-                {data.description}
+            <div className="px-3 pb-4 ml-8 animate-fadeIn space-y-2">
+              <div className="text-xs text-gray-300 leading-relaxed border-l border-[#a8c7fa]/30 pl-3">
+                {data.strategy}
+              </div>
+              <div className="text-[10px] text-gray-500 bg-[#131314] p-2 rounded border border-[#444746]">
+                <span className="font-bold text-gray-400">Assumption:</span> {data.assumption}
               </div>
             </div>
           )}
         </div>
       );
 
-    case 'verification':
+    case 'critique':
       return (
         <div 
-          className="bg-[#282a2c]/30 rounded-xl border border-[#444746] hover:border-gray-500 transition-all cursor-pointer overflow-hidden"
+          className="bg-[#282a2c]/30 rounded-xl border border-[#444746] hover:border-red-900/50 transition-all cursor-pointer overflow-hidden"
           onClick={toggle}
         >
           <div className="p-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <BarChart3 size={14} className="text-gray-500" />
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Verification Score</span>
+              <ShieldAlert size={14} className="text-red-400" />
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Adversarial Stress Test</span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-xs font-bold text-[#a8c7fa]">
-                {Math.round((data.confidence || 0) * 100)}%
-              </span>
-              <div className="text-gray-500">
-                {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-              </div>
+            <div className="text-gray-500">
+              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             </div>
           </div>
           {isExpanded && (
             <div className="px-3 pb-3 animate-fadeIn space-y-3">
-              <div className="w-full h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-[#a8c7fa] transition-all duration-500"
-                  style={{ width: `${(data.confidence || 0) * 100}%` }}
-                ></div>
+              <div className="space-y-1">
+                {data.invalidity_triggers?.map((t: string, i: number) => (
+                   <div key={i} className="text-[10px] text-red-300 flex items-start gap-1.5">
+                     <span className="mt-1 w-1 h-1 rounded-full bg-red-400 flex-none" />
+                     {t}
+                   </div>
+                ))}
               </div>
-              {data.reasoning && (
+              {data.critical_flaws && (
                 <div className="text-[10px] text-gray-400 italic leading-snug bg-black/20 p-2 rounded border border-[#444746]">
-                  {data.reasoning}
+                  {data.critical_flaws}
                 </div>
               )}
             </div>
@@ -95,7 +94,7 @@ const DeepThinkResultCard: React.FC<{
         </div>
       );
 
-    case 'selection':
+    case 'synthesis':
       return (
         <div 
           className="bg-[#004a77]/20 border border-[#a8c7fa] rounded-xl relative overflow-hidden cursor-pointer hover:bg-[#004a77]/30 transition-all"
@@ -107,54 +106,30 @@ const DeepThinkResultCard: React.FC<{
           <div className="p-4 flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <div className="px-2 py-0.5 rounded bg-[#a8c7fa] text-black text-[9px] font-black uppercase tracking-widest">
-                Winning Strategy
+                Master Blueprint
               </div>
               <div className="text-[#a8c7fa]">
                 {isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
               </div>
             </div>
             <div className="text-sm font-bold text-white mt-1 truncate pr-8">
-              {data.title}
+              {data.objective}
             </div>
           </div>
           {isExpanded && (
-            <div className="px-4 pb-4 animate-fadeIn">
+            <div className="px-4 pb-4 animate-fadeIn space-y-4">
               <div className="text-xs text-gray-300 leading-relaxed border-t border-[#a8c7fa]/20 pt-3">
-                {data.reasoning}
+                {data.blueprint}
               </div>
-            </div>
-          )}
-        </div>
-      );
-
-    case 'synthesis':
-      return (
-        <div 
-          className="bg-[#1e1f20] border-l-2 border-[#a8c7fa] rounded-r-xl overflow-hidden cursor-pointer hover:bg-[#282a2c] transition-all"
-          onClick={toggle}
-        >
-          <div className="p-3 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <ClipboardCheck size={14} className="text-[#a8c7fa]" />
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Execution Blueprint</span>
-            </div>
-            <div className="text-gray-500">
-              {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-            </div>
-          </div>
-          {isExpanded && (
-            <div className="px-3 pb-3 animate-fadeIn space-y-3">
-              <div className="flex items-center gap-2 text-[10px] text-gray-400">
-                 <span className="font-mono text-[#a8c7fa] bg-[#004a77] px-1.5 py-0.5 rounded uppercase">{data.tone}</span>
-                 <span>Target Tone</span>
-              </div>
-              <div className="space-y-1.5 pl-1">
-                {data.plan?.map((step: string, i: number) => (
-                  <div key={i} className="flex gap-2 text-xs text-gray-300 items-start">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#a8c7fa] mt-1.5 flex-none" />
-                    <span>{step}</span>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                 <div className="text-[10px] font-bold text-[#a8c7fa] uppercase">Active Safeguards</div>
+                 <div className="flex flex-wrap gap-2">
+                   {data.safeguards?.map((s: string, i: number) => (
+                     <span key={i} className="px-2 py-0.5 rounded-full bg-[#131314] border border-[#a8c7fa]/30 text-[9px] text-gray-400">
+                       {s}
+                     </span>
+                   ))}
+                 </div>
               </div>
             </div>
           )}
@@ -203,13 +178,11 @@ const TraceStepViewer: React.FC<{ step: ExecutionStep }> = ({ step }) => {
           {step.result && (
             <div className="grid gap-3 mt-2">
               {step.phase === 'Divergence' && Array.isArray(step.result) ? (
-                step.result.map((h: Hypothesis) => (
-                  <DeepThinkResultCard key={h.id} variant="hypothesis" data={h} />
+                step.result.map((s: Strategy) => (
+                  <DeepThinkResultCard key={s.id} variant="strategy" data={s} />
                 ))
-              ) : step.phase === 'Verification' ? (
-                <DeepThinkResultCard variant="verification" data={step.result} />
-              ) : step.phase === 'Selection' ? (
-                <DeepThinkResultCard variant="selection" data={step.result} />
+              ) : step.phase === 'Critique' ? (
+                <DeepThinkResultCard variant="critique" data={step.result} />
               ) : step.phase === 'Synthesis' ? (
                 <DeepThinkResultCard variant="synthesis" data={step.result} />
               ) : null}

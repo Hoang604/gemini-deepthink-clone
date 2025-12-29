@@ -1,11 +1,10 @@
-
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, Send, Sparkles, StopCircle } from 'lucide-react';
+import { Menu, Send, Sparkles } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import SettingsPanel from './components/SettingsPanel';
 import MessageBubble from './components/MessageBubble';
-import { ChatSession, Message, ModelConfig, GeminiModel, AppStats, ApiTrace, ThinkingProcess } from './types';
-import { streamGeminiResponse } from './services/geminiService';
+import { ChatSession, Message, ModelConfig, GeminiModel, AppStats } from './types';
+import { streamGeminiResponse } from './services/orchestratorService';
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
@@ -22,7 +21,6 @@ const App: React.FC = () => {
   const [config, setConfig] = useState<ModelConfig>({
     model: GeminiModel.PRO_3_PREVIEW,
     temperature: 0.7,
-    thinkingLevel: 'high',
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);

@@ -1,4 +1,3 @@
-
 export interface Message {
   id: string;
   role: 'user' | 'model';
@@ -9,16 +8,16 @@ export interface Message {
 }
 
 export interface ThinkingProcess {
-  state: 'idle' | 'hypothesizing' | 'verifying' | 'selecting' | 'synthesizing' | 'complete';
+  state: 'idle' | 'diverging' | 'critiquing' | 'synthesizing' | 'complete';
   logs: string[];
   trace: ExecutionStep[];
-  hypotheses: Hypothesis[];
-  winnerId?: string;
+  hypotheses: Strategy[];
+  masterBlueprint?: MasterBlueprint;
 }
 
 export interface ExecutionStep {
   id: string;
-  phase: 'Divergence' | 'Verification' | 'Selection' | 'Synthesis';
+  phase: 'Divergence' | 'Critique' | 'Synthesis';
   title: string;
   status: 'pending' | 'running' | 'complete' | 'failed';
   thoughts?: string;
@@ -26,14 +25,22 @@ export interface ExecutionStep {
   durationMs?: number;
 }
 
-export interface Hypothesis {
+export interface Strategy {
   id: string;
   title: string;
-  description: string;
-  confidence: number;
-  reasoning: string;
-  critique?: string;
-  isWinner?: boolean;
+  strategy: string;
+  assumption: string;
+  critique?: {
+    invalidity_triggers: string[];
+    critical_flaws: string;
+  };
+}
+
+export interface MasterBlueprint {
+  blueprint: string;
+  objective: string;
+  tone: string;
+  safeguards: string[];
 }
 
 export interface ChatSession {
@@ -46,7 +53,6 @@ export interface ChatSession {
 export interface ModelConfig {
   model: string;
   temperature: number;
-  thinkingLevel: 'low' | 'medium' | 'high';
 }
 
 export interface ApiTrace {
