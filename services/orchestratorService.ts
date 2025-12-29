@@ -86,7 +86,7 @@ export const orchestrateDeepThink = async (
     // PHASE 2: ADVERSARIAL CRITIQUE (Parallel Stress-Testing)
     const critiqueSingle = async (s: Strategy, stepId: string): Promise<Strategy> => {
       onUsage(usageIncrement);
-      const res = await generateContent(config.model, Prompts.GET_ADVERSARIAL_CRITIQUE_PROMPT(currentMessage, s.strategy, s.assumption), true);
+      const res = await generateContent(config.model, Prompts.GET_BALANCED_CRITIQUE_PROMPT(currentMessage, s.strategy, s.assumption), true);
       const critiqueText = res.text;
       
       let critiqueResult = { invalidity_triggers: [], critical_flaws: "Evaluation failed." };

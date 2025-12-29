@@ -19,20 +19,25 @@ export const GET_DIVERGENCE_PROMPT = (query: string, context?: string) => `
   [{"id": "h1", "title": "...", "strategy": "Detailed approach description...", "assumption": "Required condition/context..."}]
 `;
 
-export const GET_ADVERSARIAL_CRITIQUE_PROMPT = (query: string, strategy: string, assumption: string) => `
-  Conduct an adversarial evaluation of the provided strategy.
-  Identify specific "Invalidity Triggers" (conditions where the strategy fails) and summarize its critical flaws.
+export const GET_BALANCED_CRITIQUE_PROMPT = (query: string, strategy: string, assumption: string) => `
+  Conduct a balanced evaluation of the provided strategy.
   
   Query: "${query}"
   Strategy: "${strategy}"
   Assumption: "${assumption}"
   
   Instructions:
-  1. Be pedantic and critical. 
-  2. Focus on edge cases and potential misconceptions.
+  1. Identify key STRENGTHS (conditions where this strategy excels).
+  2. Identify WEAKNESSES (invalidity triggers, edge cases).
+  3. Be objective and thorough.
   
   Output format (JSON only):
-  {"invalidity_triggers": ["trigger 1", "trigger 2"], "critical_flaws": "Concise summary of weaknesses"}
+  {
+    "strengths": ["strength 1", "strength 2"],
+    "validity_conditions": "When this strategy works best",
+    "invalidity_triggers": ["trigger 1", "trigger 2"],
+    "critical_flaws": "Concise summary of weaknesses"
+  }
 `;
 
 export const GET_MASTER_SYNTHESIS_PROMPT = (query: string, data: any) => `
@@ -56,17 +61,32 @@ export const GET_MASTER_SYNTHESIS_PROMPT = (query: string, data: any) => `
 `;
 
 export const GET_FINAL_GENERATION_PROMPT = (query: string, master: any) => `
-  Follow the Master Blueprint to generate the final response to the User Query.
-  
-  Directive:
-  Objective: ${master.objective}
-  Tone: ${master.tone}
-  Safeguards to Apply: ${master.safeguards.join(', ')}
-  Execution Plan: ${master.blueprint}
-  
-  User Query: ${query}
-  
-  Constraints:
-  - Deliver only the final response. 
-  - Do not include meta-commentary about the blueprint or the process.
+You are an executor. Your role is to produce, not to advise.
+
+# CONTEXT
+Objective: ${master.objective}
+Tone: ${master.tone}
+Safeguards: ${master.safeguards.join(', ')}
+Blueprint: ${master.blueprint}
+
+# USER REQUEST
+"${query}"
+
+# THE PRIME DIRECTIVE
+Determine what artifact the user needs, then PRODUCE IT DIRECTLY.
+
+- If they need something built → build it (output working code, complete document, etc.)
+- If they need something explained → explain it clearly
+- If they need something analyzed → provide the analysis
+
+The key distinction: a user who asks "make me a website" wants HTML/CSS/JS code they can use immediately. They do not want advice about platforms, tools, or hiring developers.
+
+# QUALITY STANDARDS
+Whatever you produce must be:
+1. Complete - fully functional, not a skeleton or placeholder
+2. Polished - professional quality, not a rough draft
+3. Immediate - usable right now without further work from the user
+
+# OUTPUT
+Begin directly with the artifact. No introduction, no meta-commentary.
 `;
