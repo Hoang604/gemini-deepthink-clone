@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Code2, Play, Copy, X, Terminal, FileCode, Check, Braces, Maximize2, Minimize2 } from 'lucide-react';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { Code2, Play, Copy, X, Terminal, FileCode, Check, Braces, Maximize2, Minimize2, Edit3, Plus, Share2, History, Cloud } from 'lucide-react';
+import Editor from 'react-simple-code-editor';
 import { Artifact } from '../types';
+import PreviewFrame from './PreviewFrame';
 
 interface WorkbenchProps {
   artifact: Artifact | null;
@@ -8,18 +11,34 @@ interface WorkbenchProps {
   isOpen: boolean;
   isMaximized: boolean;
   onToggleMaximize: () => void;
+  onUpdateContent?: (content: string) => void;
+  onCreateArtifact?: () => void;
 }
 
-const Workbench: React.FC<WorkbenchProps> = ({ artifact, onClose, isOpen, isMaximized, onToggleMaximize }) => {
+const Workbench: React.FC<WorkbenchProps> = ({ artifact, onClose, isOpen, isMaximized, onToggleMaximize, onUpdateContent, onCreateArtifact }) => {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const [copied, setCopied] = useState(false);
+  const prevStatusRef = useRef<'streaming' | 'complete' | null>(null);
 
+  // HANDLE TAB SWITCHING LOGIC
   useEffect(() => {
-    // Auto-switch to code when a new streaming artifact appears
-    if (artifact?.status === 'streaming') {
+    if (!artifact) {
+      prevStatusRef.current = null;
+      return;
+    }
+
+    // Rule 1: Always force 'code' tab when a new artifact starts streaming
+    if (artifact.status === 'streaming' && prevStatusRef.current !== 'streaming') {
       setActiveTab('code');
     }
-  }, [artifact?.id]);
+
+    // Rule 2: Auto-switch to 'preview' tab when artifact transitions to 'complete'
+    if (artifact.status === 'complete' && prevStatusRef.current === 'streaming') {
+      setActiveTab('preview');
+    }
+
+    prevStatusRef.current = artifact.status;
+  }, [artifact?.id, artifact?.status]);
 
   const handleCopy = () => {
     if (artifact?.content) {
@@ -29,136 +48,185 @@ const Workbench: React.FC<WorkbenchProps> = ({ artifact, onClose, isOpen, isMaxi
     }
   };
 
+  // Helper to determine Prism language class
+  const getLanguage = (type: string) => {
+    switch (type) {
+      case 'tsx':
+      case 'ts': return 'typescript';
+      case 'js': return 'javascript';
+      case 'python': return 'python';
+      case 'html': return 'markup';
+      case 'c': return 'c';
+      default: return 'clike';
+    }
+  };
+
+  // Syntax highlighter function using global Prism
+  const highlightCode = (code: string) => {
+    if (typeof window !== 'undefined' && (window as any).Prism && artifact) {
+      const prism = (window as any).Prism;
+      const lang = getLanguage(artifact.type);
+      // Fallback to plain text if grammar not loaded
+      const grammar = prism.languages[lang] || prism.languages.clike;
+      return prism.highlight(code, grammar, lang);
+    }
+    return code; // Fallback
+  };
+
   if (!isOpen) return null;
 
   if (!artifact) {
     return (
-      <div className="h-full flex flex-col items-center justify-center bg-[#131314] text-gray-500 border-l border-[#444746]">
-        <div className="w-16 h-16 rounded-2xl bg-[#1e1f20] border border-[#444746] flex items-center justify-center mb-4">
-          <Terminal size={32} className="opacity-50" />
+      <div className="h-full flex flex-col items-center justify-center bg-[#1e1f20] text-gray-500 rounded-2xl border border-white/5 p-8 shadow-2xl">
+        <div className="w-20 h-20 rounded-3xl bg-[#282a2c] border border-[#444746] flex items-center justify-center mb-6 text-gray-700 shadow-2xl relative">
+          <Terminal size={40} className="text-gray-600" />
+          <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-[#004a77] flex items-center justify-center text-[#c2e7ff] border-4 border-[#1e1f20]">
+            <Plus size={16} />
+          </div>
         </div>
-        <p className="text-sm font-medium">Workbench Ready</p>
-        <p className="text-xs opacity-60 mt-2 max-w-[200px] text-center">Generate code to see it appear here in the artifacts stage.</p>
+        <h3 className="text-lg font-medium text-[#e3e3e3] mb-2">Workbench Empty</h3>
+        <p className="text-sm text-gray-500 text-center max-w-xs mb-8">
+          The model hasn't generated any code yet, or you haven't started a scratchpad.
+        </p>
+        
+        <div className="flex gap-3">
+          <button 
+            onClick={onCreateArtifact}
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#a8c7fa] hover:bg-[#c2e7ff] text-black font-semibold rounded-full transition-all shadow-lg active:scale-95"
+          >
+            <Plus size={18} />
+            Start Coding
+          </button>
+          <button 
+            onClick={onClose}
+            className="px-6 py-2.5 bg-[#282a2c] hover:bg-[#37393b] text-gray-300 rounded-full transition-colors border border-[#444746]"
+          >
+            Close Pane
+          </button>
+        </div>
       </div>
     );
   }
 
-  const getIcon = () => {
-    switch (artifact.type) {
-      case 'tsx': 
-      case 'ts': 
-      case 'js': return <Code2 size={16} className="text-[#a8c7fa]" />;
-      case 'html': return <FileCode size={16} className="text-orange-400" />;
-      case 'c': return <Terminal size={16} className="text-green-400" />;
-      case 'python': return <Terminal size={16} className="text-blue-400" />;
-      default: return <Braces size={16} />;
-    }
-  };
-
-  const getLanguageLabel = () => {
-    switch (artifact.type) {
-      case 'tsx': return 'React / TypeScript';
-      case 'ts': return 'TypeScript';
-      case 'js': return 'JavaScript';
-      case 'html': return 'HTML5';
-      case 'c': return 'C / C++';
-      case 'python': return 'Python 3';
-      default: return 'Plain Text';
-    }
-  };
+  const isStreaming = artifact.status === 'streaming';
+  const lineCount = artifact.content.split('\n').length;
+  const lineNumbers = Array.from({ length: lineCount }, (_, i) => i + 1);
 
   return (
-    <div className={`h-full flex flex-col bg-[#1e1f20] border-l border-[#444746] transition-all duration-300`}>
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[#444746] bg-[#131314]">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="p-2 rounded-lg bg-[#282a2c] border border-[#444746]">
-            {getIcon()}
+    <div className="h-full flex flex-col bg-[#1e1f20] rounded-2xl border border-white/5 shadow-2xl overflow-hidden">
+      {/* GEMINI-STYLE HEADER */}
+      <div className="flex items-center justify-between px-4 py-3 bg-[#1e1f20] border-b border-white/5 flex-none h-16">
+        
+        {/* Left: File Info */}
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="p-2 rounded-lg bg-[#282a2c] text-gray-300">
+             <FileCode size={18} />
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold text-[#e3e3e3] truncate">
-              {artifact.title || 'Untitled Artifact'}
-            </span>
-            <span className="text-[10px] text-gray-400 font-mono">
-              {getLanguageLabel()}
-            </span>
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2">
+               <span className="text-sm font-medium text-white truncate max-w-[200px]">{artifact.title}</span>
+               {isStreaming ? (
+                 <Cloud size={12} className="text-[#a8c7fa] animate-pulse" />
+               ) : (
+                 <Cloud size={12} className="text-gray-500" />
+               )}
+            </div>
+            <span className="text-[10px] text-gray-500 font-mono">{artifact.type.toUpperCase()}</span>
           </div>
         </div>
-        <div className="flex items-center gap-1">
+
+        {/* Center: Tabs Pill (Segmented Control) */}
+        <div className="flex items-center bg-[#282a2c] rounded-full p-1 mx-4">
+          <button 
+            onClick={() => setActiveTab('code')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+              activeTab === 'code' 
+                ? 'bg-[#004a77] text-[#c2e7ff] shadow-sm' 
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Code2 size={14} />
+            Code
+          </button>
+          <button 
+            onClick={() => setActiveTab('preview')}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
+              activeTab === 'preview' 
+                ? 'bg-[#004a77] text-[#c2e7ff] shadow-sm' 
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            <Play size={14} />
+            Preview
+          </button>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
            <button 
-              onClick={onToggleMaximize} 
-              className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 transition-colors"
-              title={isMaximized ? "Restore Chat" : "Maximize Workbench"}
-            >
-             {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+             className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-[#a8c7fa] hover:bg-[#c2e7ff] text-[#003355] rounded-full text-xs font-bold transition-colors"
+             title="Share Artifact"
+           >
+             <Share2 size={14} />
+             Share
            </button>
-           <button 
-              onClick={onClose} 
-              className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 transition-colors"
-              title="Close Workbench"
-            >
-             <X size={18} />
+           
+           <button onClick={handleCopy} className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 hover:text-white transition-colors">
+              {copied ? <Check size={18} className="text-green-400" /> : <Copy size={18} />}
+           </button>
+           
+           <button onClick={onToggleMaximize} className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 hover:text-white transition-colors">
+              {isMaximized ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+           </button>
+
+           <button onClick={onClose} className="p-2 hover:bg-[#282a2c] rounded-full text-gray-400 hover:text-white transition-colors">
+              <X size={18} />
            </button>
         </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-[#1e1f20] border-b border-[#444746]">
-         <div className="flex p-1 bg-[#131314] rounded-lg border border-[#444746]">
-            <button 
-              onClick={() => setActiveTab('code')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === 'code' ? 'bg-[#282a2c] text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-            >
-              <Code2 size={14} />
-              Code
-            </button>
-            <button 
-              onClick={() => setActiveTab('preview')}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-2 ${activeTab === 'preview' ? 'bg-[#282a2c] text-white shadow-sm' : 'text-gray-500 hover:text-gray-300'}`}
-            >
-              <Play size={14} />
-              Preview
-            </button>
-         </div>
-
-         <div className="flex items-center gap-2">
-            <button 
-              onClick={handleCopy}
-              className="p-2 hover:bg-[#282a2c] rounded-lg text-gray-400 transition-colors relative"
-              title="Copy to Clipboard"
-            >
-              {copied ? <Check size={16} className="text-green-400" /> : <Copy size={16} />}
-            </button>
-         </div>
       </div>
 
       {/* Content Area */}
-      <div className="flex-1 overflow-hidden relative group">
+      <div className="flex-1 overflow-hidden relative bg-[#131314]">
         {activeTab === 'code' ? (
-          <div className="h-full overflow-auto custom-scrollbar p-4 bg-[#131314]">
-            <pre className="font-mono text-sm text-[#e3e3e3] leading-relaxed whitespace-pre-wrap">
-              <code>{artifact.content}</code>
-              {artifact.status === 'streaming' && (
-                <span className="inline-block w-2 h-4 bg-[#a8c7fa] animate-pulse ml-1 align-middle" />
-              )}
-            </pre>
+          <div className="h-full relative flex flex-col group">
+            <div className="flex-1 relative overflow-auto custom-scrollbar flex bg-[#131314]">
+               {/* Line Numbers Gutter */}
+               <div className="flex-none w-12 bg-[#131314] border-r border-white/5 text-right py-4 pr-3 select-none">
+                 {lineNumbers.map(n => (
+                   <div key={n} className="text-[14px] leading-[1.6] text-gray-500 font-mono font-medium">
+                     {n}
+                   </div>
+                 ))}
+               </div>
+
+               {/* Syntax Highlighted Editor */}
+               <div className="flex-1 relative font-mono text-[14px] leading-[1.6]">
+                 <Editor
+                   value={artifact.content}
+                   onValueChange={(code) => onUpdateContent?.(code)}
+                   highlight={highlightCode}
+                   padding={16}
+                   disabled={isStreaming}
+                   className="prism-editor min-h-full"
+                   style={{
+                     fontFamily: '"JetBrains Mono", "Fira Code", monospace',
+                     fontSize: 14,
+                     backgroundColor: 'transparent',
+                   }}
+                   textareaClassName="focus:outline-none"
+                 />
+               </div>
+            </div>
+            
+            {isStreaming && (
+              <div className="absolute bottom-6 right-6 flex items-center gap-2 bg-[#282a2c] border border-[#444746] px-4 py-2 rounded-full text-xs text-gray-300 shadow-xl z-10 animate-in fade-in slide-in-from-bottom-2">
+                <span className="w-2 h-2 bg-[#a8c7fa] rounded-full animate-pulse"></span>
+                Generating...
+              </div>
+            )}
           </div>
         ) : (
-          <div className="h-full flex flex-col items-center justify-center bg-[#131314] text-gray-500 relative">
-             <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5"></div>
-             <div className="z-10 text-center space-y-4">
-                <div className="w-20 h-20 mx-auto rounded-full bg-[#1e1f20] border border-[#444746] flex items-center justify-center">
-                  <Play size={32} className="text-gray-600" />
-                </div>
-                <div>
-                   <h3 className="text-lg font-medium text-gray-300">Execution Engine Offline</h3>
-                   <p className="text-xs text-gray-500 mt-1">Artifact Slice 1: Visualization Only</p>
-                </div>
-                <div className="px-4 py-2 bg-[#282a2c] rounded border border-[#444746] text-xs font-mono text-[#a8c7fa]">
-                   Render logic pending implementation in Slice 2
-                </div>
-             </div>
-          </div>
+          <PreviewFrame code={artifact.content} type={artifact.type} status={artifact.status} />
         )}
       </div>
     </div>

@@ -1,6 +1,8 @@
+
 import { GoogleGenAI, Chat } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+// Fix: Strictly follow guidelines for initialization
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 /**
  * Basic wrapper for Gemini content generation.

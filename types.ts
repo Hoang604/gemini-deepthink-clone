@@ -1,24 +1,28 @@
+import { ToTProcessState } from "./types/tot";
+
 export interface Message {
   id: string;
-  role: 'user' | 'model';
+  role: "user" | "model";
   text: string;
   timestamp: number;
   isError?: boolean;
   thinkingProcess?: ThinkingProcess;
+  /** Tree-of-Thought process state (mutually exclusive with thinkingProcess) */
+  totProcess?: ToTProcessState;
   relatedArtifactId?: string; // Link message to an artifact
 }
 
 export interface Artifact {
   id: string;
-  type: 'tsx' | 'html' | 'c' | 'python' | 'js' | 'ts' | 'project';
+  type: "tsx" | "html" | "c" | "python" | "js" | "ts" | "project";
   title: string;
   content: string;
-  status: 'streaming' | 'complete';
+  status: "streaming" | "complete";
   isVisible: boolean;
 }
 
 export interface ThinkingProcess {
-  state: 'idle' | 'diverging' | 'critiquing' | 'synthesizing' | 'complete';
+  state: "idle" | "diverging" | "critiquing" | "synthesizing" | "complete";
   logs: string[];
   trace: ExecutionStep[];
   hypotheses: Strategy[];
@@ -27,9 +31,9 @@ export interface ThinkingProcess {
 
 export interface ExecutionStep {
   id: string;
-  phase: 'Divergence' | 'Critique' | 'Synthesis';
+  phase: "Divergence" | "Critique" | "Synthesis";
   title: string;
-  status: 'pending' | 'running' | 'complete' | 'failed';
+  status: "pending" | "running" | "complete" | "failed";
   thoughts?: string;
   result?: any;
   durationMs?: number;
@@ -64,7 +68,14 @@ export interface ChatSession {
 export interface ModelConfig {
   model: string;
   temperature: number;
+  /** Maximum Tree-of-Thought recursion depth (1-5) */
+  maxToTDepth: number;
+  /** Force decomposition mode (Deep Mode toggle) */
+  forceDeepMode: boolean;
 }
+
+// Re-export ToT types for convenience
+export * from "./types/tot";
 
 export interface ApiTrace {
   id: string;
@@ -80,6 +91,6 @@ export interface AppStats {
 }
 
 export enum GeminiModel {
-  PRO_3_PREVIEW = 'gemini-3-pro-preview',
-  FLASH_3_PREVIEW = 'gemini-3-flash-preview',
+  PRO_3_PREVIEW = "gemini-3-pro-preview",
+  FLASH_3_PREVIEW = "gemini-3-flash-preview",
 }

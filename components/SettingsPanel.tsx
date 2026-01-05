@@ -1,7 +1,6 @@
-
-import React from 'react';
-import { Settings2, BrainCircuit, Zap, Activity } from 'lucide-react';
-import { ModelConfig, GeminiModel, AppStats } from '../types';
+import React from "react";
+import { Settings2, BrainCircuit, Zap, Activity } from "lucide-react";
+import { ModelConfig, GeminiModel, AppStats } from "../types";
 
 interface SettingsPanelProps {
   config: ModelConfig;
@@ -11,7 +10,13 @@ interface SettingsPanelProps {
   stats: AppStats;
 }
 
-const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onConfigChange, isOpen, onClose, stats }) => {
+const SettingsPanel: React.FC<SettingsPanelProps> = ({
+  config,
+  onConfigChange,
+  isOpen,
+  onClose,
+  stats,
+}) => {
   if (!isOpen) return null;
 
   const handleModelChange = (model: string) => {
@@ -19,39 +24,51 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onConfigChange, i
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-[#1e1f20] border border-[#444746] rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-[#1e1f20] border border-[#444746] rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-6 border-b border-[#444746] flex-none">
           <h2 className="text-xl font-semibold flex items-center gap-2">
             <Settings2 size={24} className="text-[#a8c7fa]" />
             System Control
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-white">
+            ✕
+          </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           <div className="space-y-6">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">Model Selection</h3>
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+              Model Selection
+            </h3>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleModelChange(GeminiModel.PRO_3_PREVIEW)}
                 className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
-                  config.model === GeminiModel.PRO_3_PREVIEW 
-                    ? 'bg-[#004a77]/30 border-[#a8c7fa] text-[#a8c7fa]' 
-                    : 'bg-[#282a2c] border-transparent text-gray-400 hover:bg-[#37393b]'
+                  config.model === GeminiModel.PRO_3_PREVIEW
+                    ? "bg-[#004a77]/30 border-[#a8c7fa] text-[#a8c7fa]"
+                    : "bg-[#282a2c] border-transparent text-gray-400 hover:bg-[#37393b]"
                 }`}
               >
                 <BrainCircuit size={24} className="mb-2" />
                 <span className="font-semibold text-sm">3 Pro</span>
-                <span className="text-[10px] opacity-70">DeepThink Preview</span>
+                <span className="text-[10px] opacity-70">
+                  DeepThink Preview
+                </span>
               </button>
-              
+
               <button
                 onClick={() => handleModelChange(GeminiModel.FLASH_3_PREVIEW)}
                 className={`flex flex-col items-center justify-center p-4 rounded-xl border transition-all ${
                   config.model === GeminiModel.FLASH_3_PREVIEW
-                    ? 'bg-[#004a77]/30 border-[#a8c7fa] text-[#a8c7fa]' 
-                    : 'bg-[#282a2c] border-transparent text-gray-400 hover:bg-[#37393b]'
+                    ? "bg-[#004a77]/30 border-[#a8c7fa] text-[#a8c7fa]"
+                    : "bg-[#282a2c] border-transparent text-gray-400 hover:bg-[#37393b]"
                 }`}
               >
                 <Zap size={24} className="mb-2" />
@@ -62,53 +79,143 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({ config, onConfigChange, i
 
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-gray-300">
-                  <span className="flex-1">Creativity (Temperature)</span>
-                  <span className="font-mono text-[#a8c7fa]">{config.temperature}</span>
+                <span className="flex-1">Creativity (Temperature)</span>
+                <span className="font-mono text-[#a8c7fa]">
+                  {config.temperature}
+                </span>
               </div>
               <input
-                  type="range" min="0" max="2" step="0.1"
-                  value={config.temperature}
-                  onChange={(e) => onConfigChange({...config, temperature: parseFloat(e.target.value)})}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#a8c7fa]"
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={config.temperature}
+                onChange={(e) =>
+                  onConfigChange({
+                    ...config,
+                    temperature: parseFloat(e.target.value),
+                  })
+                }
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-[#a8c7fa]"
+              />
+            </div>
+          </div>
+
+          {/* Tree-of-Thought Settings */}
+          <div className="space-y-4 pt-4 border-t border-[#444746]">
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest">
+              Tree-of-Thought
+            </h3>
+
+            {/* Deep Mode Toggle */}
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm text-gray-300">Deep Mode</div>
+                <div className="text-[10px] text-gray-500">
+                  Force problem decomposition
+                </div>
+              </div>
+              <button
+                onClick={() =>
+                  onConfigChange({
+                    ...config,
+                    forceDeepMode: !config.forceDeepMode,
+                  })
+                }
+                className={`relative w-12 h-6 rounded-full transition-colors ${
+                  config.forceDeepMode ? "bg-purple-600" : "bg-gray-600"
+                }`}
+              >
+                <div
+                  className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
+                    config.forceDeepMode ? "translate-x-7" : "translate-x-1"
+                  }`}
                 />
+              </button>
+            </div>
+
+            {/* Max Depth Slider */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-gray-300">
+                <span className="flex-1">Max Thinking Depth</span>
+                <span className="font-mono text-purple-400">
+                  {config.maxToTDepth}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="5"
+                step="1"
+                value={config.maxToTDepth}
+                onChange={(e) =>
+                  onConfigChange({
+                    ...config,
+                    maxToTDepth: parseInt(e.target.value),
+                  })
+                }
+                className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              />
+              <div className="flex justify-between text-[9px] text-gray-600">
+                <span>Shallow</span>
+                <span>Deep</span>
+              </div>
             </div>
           </div>
 
           <div className="space-y-4 pt-4 border-t border-[#444746]">
-             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
-               <Activity size={14} />
-               Trace History
-             </h3>
-             <div className="bg-[#131314] rounded-xl border border-[#444746] overflow-hidden">
-               {stats.traces.length === 0 ? (
-                 <div className="p-4 text-center text-xs text-gray-500">No telemetry recorded.</div>
-               ) : (
-                 <div className="max-h-40 overflow-y-auto">
-                   <table className="w-full text-left text-[10px]">
-                     <thead className="bg-[#282a2c] text-gray-400 sticky top-0">
-                       <tr>
-                         <th className="p-2">Time</th>
-                         <th className="p-2">Model</th>
-                         <th className="p-2 text-right">Latency</th>
-                       </tr>
-                     </thead>
-                     <tbody className="divide-y divide-[#444746]">
-                       {stats.traces.map((trace) => (
-                         <tr key={trace.id} className="hover:bg-[#1e1f20]">
-                           <td className="p-2 text-gray-400">{new Date(trace.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit' })}</td>
-                           <td className="p-2">
-                             <span className={`px-1.5 py-0.5 rounded ${trace.model.includes('pro') ? 'bg-blue-900/30 text-blue-300' : 'bg-teal-900/30 text-teal-300'}`}>
-                               {trace.model.includes('pro') ? '3 Pro' : '3 Flash'}
-                             </span>
-                           </td>
-                           <td className="p-2 text-right font-mono">{trace.durationMs}ms</td>
-                         </tr>
-                       ))}
-                     </tbody>
-                   </table>
-                 </div>
-               )}
-             </div>
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+              <Activity size={14} />
+              Trace History
+            </h3>
+            <div className="bg-[#131314] rounded-xl border border-[#444746] overflow-hidden">
+              {stats.traces.length === 0 ? (
+                <div className="p-4 text-center text-xs text-gray-500">
+                  No telemetry recorded.
+                </div>
+              ) : (
+                <div className="max-h-40 overflow-y-auto">
+                  <table className="w-full text-left text-[10px]">
+                    <thead className="bg-[#282a2c] text-gray-400 sticky top-0">
+                      <tr>
+                        <th className="p-2">Time</th>
+                        <th className="p-2">Model</th>
+                        <th className="p-2 text-right">Latency</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#444746]">
+                      {stats.traces.map((trace) => (
+                        <tr key={trace.id} className="hover:bg-[#1e1f20]">
+                          <td className="p-2 text-gray-400">
+                            {new Date(trace.timestamp).toLocaleTimeString([], {
+                              hour12: false,
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </td>
+                          <td className="p-2">
+                            <span
+                              className={`px-1.5 py-0.5 rounded ${
+                                trace.model.includes("pro")
+                                  ? "bg-blue-900/30 text-blue-300"
+                                  : "bg-teal-900/30 text-teal-300"
+                              }`}
+                            >
+                              {trace.model.includes("pro")
+                                ? "3 Pro"
+                                : "3 Flash"}
+                            </span>
+                          </td>
+                          <td className="p-2 text-right font-mono">
+                            {trace.durationMs}ms
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

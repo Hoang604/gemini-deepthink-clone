@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -6,6 +7,18 @@
     <title>Gemini 3 Pro DeepThink</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- PrismJS Core & Languages -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-jsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-tsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-c.min.js"></script>
+
     <style>
       body {
         font-family: 'Inter', sans-serif;
@@ -43,6 +56,86 @@
         background-color: transparent;
         padding: 0;
       }
+      
+      /* 
+         VS Code / One Dark Pro Hybrid Theme 
+         Customized for vibrancy ("Colorful") 
+      */
+      pre[class*="language-"], code[class*="language-"] {
+        color: #abb2bf;
+        font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace !important;
+        font-size: 14px !important;
+        line-height: 1.6 !important; /* Increased breathing room */
+        direction: ltr;
+        text-align: left;
+        white-space: pre;
+        word-spacing: normal;
+        word-break: normal;
+        tab-size: 2;
+        hyphens: none;
+        background: transparent !important;
+        text-shadow: none !important;
+      }
+
+      /* Keywords (Purple/Pink) */
+      .token.keyword, .token.selector-tag, .token.section, .token.title, .token.name {
+        color: #c678dd;
+      }
+      
+      /* Functions (Blue/Yellow) */
+      .token.function, .token.class-name {
+        color: #61afef; /* VS Code Blue */
+      }
+      
+      /* Strings (Green) */
+      .token.string, .token.attr-value {
+        color: #98c379;
+      }
+      
+      /* Numbers/Booleans (Orange) */
+      .token.number, .token.boolean, .token.constant {
+        color: #d19a66;
+      }
+      
+      /* Punctuation / Brackets (Light Grey/Yellowish) */
+      .token.punctuation {
+        color: #abb2bf;
+      }
+      .token.operator {
+        color: #56b6c2;
+      }
+
+      /* Tags (Red) */
+      .token.tag {
+        color: #e06c75;
+      }
+      .token.attr-name {
+        color: #d19a66;
+      }
+
+      /* Comments (Italic Grey) */
+      .token.comment {
+        color: #5c6370;
+        font-style: italic;
+      }
+
+      /* Variables / Text */
+      .token.variable {
+        color: #e5c07b;
+      }
+      
+      /* Specific fixes for React/JSX */
+      .language-tsx .token.tag .token.punctuation {
+        color: #abb2bf;
+      }
+      .language-tsx .token.class-name {
+        color: #e5c07b; /* Gold for components */
+      }
+
+      /* Editor Specifics */
+      .prism-editor textarea {
+        outline: none !important;
+      }
     </style>
   <script type="importmap">
 {
@@ -54,7 +147,12 @@
     "react": "https://esm.sh/react@^19.2.3",
     "lucide-react": "https://esm.sh/lucide-react@^0.561.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "remark-gfm": "https://esm.sh/remark-gfm@^4.0.1"
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "remark-gfm": "https://esm.sh/remark-gfm@^4.0.1",
+    "sucrase": "https://esm.sh/sucrase@^3.35.0",
+    "framer-motion": "https://esm.sh/framer-motion@^12.4.7",
+    "recharts": "https://esm.sh/recharts@^2.15.1",
+    "react-simple-code-editor": "https://esm.sh/react-simple-code-editor@0.13.1"
   }
 }
 </script>
