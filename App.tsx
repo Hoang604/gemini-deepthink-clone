@@ -22,33 +22,41 @@ import { streamGeminiResponse } from "./services/orchestratorService";
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
-const parseArtifactsFromStream = (
+/**
+ * Parse all artifacts from model output.
+ * Supports multiple artifacts in a single response.
+ */
+const parseAllArtifacts = (
   fullText: string
-): { cleanText: string; detectedArtifact: Partial<Artifact> | null } => {
+): { cleanText: string; artifacts: Partial<Artifact>[] } => {
   const artifactRegex =
-    /<<(?<type>TSX|HTML|C|PYTHON|JS|TS)(?:\s+title="(?<title>.*?)")?>>([\s\S]*?)(<<END>>|$)/i;
-  const match = fullText.match(artifactRegex);
+    /<<(?<type>TSX|HTML|C|PYTHON|JS|TS|SQL)(?:\s+title="(?<title>.*?)")?>>([\s\S]*?)(<<END>>|$)/gi;
 
-  if (match && match.groups) {
-    const type = match.groups.type.toLowerCase() as any;
+  const artifacts: Partial<Artifact>[] = [];
+  let cleanText = fullText;
+  let match;
+
+  while ((match = artifactRegex.exec(fullText)) !== null) {
+    const type = match[1].toLowerCase() as Artifact["type"];
+    const title = match[2] || "Generated Code";
     const content = match[3] || "";
-    const isComplete = !!match[4];
-    const cleanText = fullText.replace(
-      match[0],
-      `\n*[Artifact: ${type.toUpperCase()} Generated]*\n`
-    );
+    const isComplete = match[4] === "<<END>>";
 
-    return {
-      cleanText,
-      detectedArtifact: {
-        type,
-        title: match.groups.title || "Generated Code",
-        content,
-        status: isComplete ? "complete" : "streaming",
-      },
-    };
+    artifacts.push({
+      type,
+      title,
+      content,
+      status: isComplete ? "complete" : "streaming",
+      timestamp: Date.now(),
+    });
+
+    cleanText = cleanText.replace(
+      match[0],
+      `\n*[${type.toUpperCase()}: ${title}]*\n`
+    );
   }
-  return { cleanText: fullText, detectedArtifact: null };
+
+  return { cleanText, artifacts };
 };
 
 const App: React.FC = () => {
@@ -60,8 +68,12 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isWorkbenchOpen, setIsWorkbenchOpen] = useState(false);
   const [isWorkbenchMaximized, setIsWorkbenchMaximized] = useState(false);
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(
+    null
+  );
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [stats, setStats] = useState<AppStats>({
     flashCount: 0,
     proCount: 0,
@@ -71,8 +83,8 @@ const App: React.FC = () => {
   const [config, setConfig] = useState<ModelConfig>({
     model: GeminiModel.PRO_3_PREVIEW,
     temperature: 0.7,
-    maxToTDepth: 3,
-    forceDeepMode: false,
+    maxToTDepth: 2,
+    forceDeepMode: true,
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -82,8 +94,11 @@ const App: React.FC = () => {
 
   const currentSession = sessions.find((s) => s.id === currentSessionId);
   const currentMessages = currentSession?.messages || [];
-  const activeArtifact =
-    currentSession?.artifacts?.[currentSession.artifacts.length - 1] || null;
+  // Get the selected artifact, or fall back to latest
+  const activeArtifact = selectedArtifactId
+    ? currentSession?.artifacts?.find((a) => a.id === selectedArtifactId) ||
+      null
+    : currentSession?.artifacts?.[currentSession.artifacts.length - 1] || null;
 
   useEffect(() => {
     if (shouldAutoScrollRef.current) {
@@ -100,6 +115,23 @@ const App: React.FC = () => {
       setIsWorkbenchOpen(true);
     }
   }, [activeArtifact?.id]);
+
+  // Intercept console.log to display in sidebar
+  useEffect(() => {
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      originalLog.apply(console, args);
+      const message = args
+        .map((arg) =>
+          typeof arg === "object" ? JSON.stringify(arg) : String(arg)
+        )
+        .join(" ");
+      setConsoleLogs((prev) => [...prev.slice(-50), message]);
+    };
+    return () => {
+      console.log = originalLog;
+    };
+  }, []);
 
   const handleScroll = () => {
     if (scrollContainerRef.current) {
@@ -195,7 +227,7 @@ const App: React.FC = () => {
     setInput("");
     setIsGenerating(true);
     let rawResponseAccumulator = "";
-    let currentArtifactId: string | null = null;
+    let trackedArtifactIds: string[] = [];
 
     try {
       const { durationMs } = await streamGeminiResponse(
@@ -204,34 +236,47 @@ const App: React.FC = () => {
         config,
         (chunk) => {
           rawResponseAccumulator += chunk;
-          const { cleanText, detectedArtifact } = parseArtifactsFromStream(
+          const { cleanText, artifacts: parsedArtifacts } = parseAllArtifacts(
             rawResponseAccumulator
           );
+
           setSessions((prev) =>
             prev.map((s) => {
               if (s.id !== currentSessionId) return s;
+
               let updatedArtifacts = [...s.artifacts];
-              if (detectedArtifact) {
-                if (!currentArtifactId) {
-                  currentArtifactId = generateId();
+
+              // Process each parsed artifact
+              parsedArtifacts.forEach((parsed, idx) => {
+                if (idx < trackedArtifactIds.length) {
+                  // Update existing artifact
+                  const existingId = trackedArtifactIds[idx];
+                  updatedArtifacts = updatedArtifacts.map((a) =>
+                    a.id === existingId ? { ...a, ...(parsed as any) } : a
+                  );
+                } else {
+                  // Create new artifact
+                  const newId = generateId();
+                  trackedArtifactIds.push(newId);
                   updatedArtifacts.push({
-                    id: currentArtifactId,
-                    ...(detectedArtifact as any),
+                    id: newId,
+                    ...(parsed as any),
                     isVisible: true,
                   });
-                } else {
-                  updatedArtifacts = updatedArtifacts.map((a) =>
-                    a.id === currentArtifactId
-                      ? { ...a, ...(detectedArtifact as any) }
-                      : a
-                  );
                 }
-              }
+              });
+
               return {
                 ...s,
                 artifacts: updatedArtifacts,
                 messages: s.messages.map((m) =>
-                  m.id === botMsgId ? { ...m, text: cleanText } : m
+                  m.id === botMsgId
+                    ? {
+                        ...m,
+                        text: cleanText,
+                        artifactIds: [...trackedArtifactIds],
+                      }
+                    : m
                 ),
               };
             })
@@ -317,6 +362,17 @@ const App: React.FC = () => {
     }
   };
 
+  // Reset textarea height when input is cleared (e.g., after sending)
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      if (input) {
+        textareaRef.current.style.height =
+          textareaRef.current.scrollHeight + "px";
+      }
+    }
+  }, [input]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#131314] text-[#e3e3e3] font-inter">
       <Sidebar
@@ -333,6 +389,7 @@ const App: React.FC = () => {
         onNewChat={createNewSession}
         stats={stats}
         activeModel={config.model}
+        consoleLogs={consoleLogs}
       />
 
       <div className="flex-1 flex flex-col min-w-0 relative transition-all duration-300">
@@ -416,15 +473,29 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <div className="max-w-3xl mx-auto py-8">
-                  {currentMessages.map((msg) => (
-                    <MessageBubble
-                      key={msg.id}
-                      message={msg}
-                      isThinking={
-                        isGenerating && msg.role === "model" && !msg.text
-                      }
-                    />
-                  ))}
+                  {currentMessages.map((msg) => {
+                    // Get artifacts that belong to this message
+                    const messageArtifacts = msg.artifactIds
+                      ? currentSession?.artifacts.filter((a) =>
+                          msg.artifactIds!.includes(a.id)
+                        ) || []
+                      : [];
+
+                    return (
+                      <MessageBubble
+                        key={msg.id}
+                        message={msg}
+                        isThinking={
+                          isGenerating && msg.role === "model" && !msg.text
+                        }
+                        artifacts={messageArtifacts}
+                        onOpenArtifact={(id) => {
+                          setSelectedArtifactId(id);
+                          setIsWorkbenchOpen(true);
+                        }}
+                      />
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </div>
               )}

@@ -9,16 +9,18 @@ export interface Message {
   thinkingProcess?: ThinkingProcess;
   /** Tree-of-Thought process state (mutually exclusive with thinkingProcess) */
   totProcess?: ToTProcessState;
-  relatedArtifactId?: string; // Link message to an artifact
+  /** IDs of artifacts generated in this message */
+  artifactIds?: string[];
 }
 
 export interface Artifact {
   id: string;
-  type: "tsx" | "html" | "c" | "python" | "js" | "ts" | "project";
+  type: "tsx" | "html" | "c" | "python" | "js" | "ts" | "sql" | "project";
   title: string;
   content: string;
   status: "streaming" | "complete";
   isVisible: boolean;
+  timestamp?: number;
 }
 
 export interface ThinkingProcess {

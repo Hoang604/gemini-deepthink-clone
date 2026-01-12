@@ -170,9 +170,6 @@ export interface ToTProcessState {
   /** User-configured maximum depth */
   readonly maxDepth: number;
 
-  /** Whether decomposition was forced (Deep Mode) */
-  readonly forceDecomposition: boolean;
-
   /** Overall status of the tree execution */
   status: "running" | "complete" | "failed";
 

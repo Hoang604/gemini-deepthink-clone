@@ -1,12 +1,18 @@
-
-import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { transform } from 'sucrase';
-import { AlertCircle, RefreshCw, Terminal, Cpu, Box, ShieldCheck } from 'lucide-react';
+import React, { useEffect, useState, useMemo, useRef } from "react";
+import { transform } from "sucrase";
+import {
+  AlertCircle,
+  RefreshCw,
+  Terminal,
+  Cpu,
+  Box,
+  ShieldCheck,
+} from "lucide-react";
 
 interface PreviewFrameProps {
   code: string;
   type: string;
-  status: 'streaming' | 'complete';
+  status: "streaming" | "complete";
 }
 
 /**
@@ -44,7 +50,9 @@ const generateSrcDoc = (transpiledCode: string): string => {
     {
       "imports": {
         "react": "https://esm.sh/react@18.3.1",
+        "react-dom": "https://esm.sh/react-dom@18.3.1",
         "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+        "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
         "lucide-react": "https://esm.sh/lucide-react@0.294.0",
         "framer-motion": "https://esm.sh/framer-motion@11.15.0?external=react,react-dom",
         "recharts": "https://esm.sh/recharts@2.12.7?external=react,react-dom"
@@ -103,52 +111,56 @@ const generateSrcDoc = (transpiledCode: string): string => {
 };
 
 const PreviewFrame: React.FC<PreviewFrameProps> = ({ code, type, status }) => {
-  const [error, setError] = useState<{ message: string; type: string } | null>(null);
+  const [error, setError] = useState<{ message: string; type: string } | null>(
+    null
+  );
   const [transpiled, setTranspiled] = useState<string | null>(null);
   const [key, setKey] = useState(0);
 
   useEffect(() => {
     // We only attempt transpilation once generation is complete to ensure a stable module environment.
-    if (status === 'complete' && type === 'tsx') {
+    if (status === "complete" && type === "tsx") {
       try {
         const result = transform(code, {
-          transforms: ['typescript', 'jsx'],
-          jsxRuntime: 'classic', // Classic is safer for standard component injection
+          transforms: ["typescript", "jsx"],
+          jsxRuntime: "classic", // Classic is safer for standard component injection
         }).code;
         setTranspiled(result);
         setError(null);
       } catch (err: any) {
-        setError({ message: err.message, type: 'Compilation Error' });
+        setError({ message: err.message, type: "Compilation Error" });
       }
     }
   }, [code, status, type]);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'PREVIEW_ERROR') {
+      if (event.data?.type === "PREVIEW_ERROR") {
         setError(event.data.payload);
       }
     };
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
   }, []);
 
   const srcDocContent = useMemo(() => {
-    if (!transpiled) return '';
+    if (!transpiled) return "";
     return generateSrcDoc(transpiled);
   }, [transpiled, key]);
 
-  if (type !== 'tsx') {
+  if (type !== "tsx") {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500 p-8 text-center bg-[#131314]">
         <Terminal size={40} className="mb-4 opacity-20" />
         <h3 className="text-sm font-medium">Non-Visual Artifact</h3>
-        <p className="text-xs mt-2 max-w-[240px]">This code is not meant for rendering.</p>
+        <p className="text-xs mt-2 max-w-[240px]">
+          This code is not meant for rendering.
+        </p>
       </div>
     );
   }
 
-  if (status === 'streaming') {
+  if (status === "streaming") {
     return (
       <div className="h-full w-full bg-[#131314] flex flex-col items-center justify-center p-12 text-center">
         <div className="relative mb-8">
@@ -157,8 +169,12 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ code, type, status }) => {
             <Cpu size={48} className="text-[#a8c7fa] animate-pulse" />
           </div>
         </div>
-        <h3 className="text-lg font-semibold text-[#e3e3e3] mb-2">Syncing Environment...</h3>
-        <p className="text-sm text-gray-500 max-w-sm">Generating output from the DeepThink model.</p>
+        <h3 className="text-lg font-semibold text-[#e3e3e3] mb-2">
+          Syncing Environment...
+        </h3>
+        <p className="text-sm text-gray-500 max-w-sm">
+          Generating output from the DeepThink model.
+        </p>
       </div>
     );
   }
@@ -168,10 +184,15 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ code, type, status }) => {
       <div className="flex items-center justify-between px-4 py-2 bg-[#1e1f20] border-b border-[#444746] z-10 flex-none h-10">
         <div className="flex items-center gap-2">
           <ShieldCheck size={14} className="text-emerald-500" />
-          <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">Secure Sandbox</span>
+          <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+            Secure Sandbox
+          </span>
         </div>
-        <button 
-          onClick={() => { setError(null); setKey(k => k + 1); }}
+        <button
+          onClick={() => {
+            setError(null);
+            setKey((k) => k + 1);
+          }}
           className="p-1 hover:bg-[#282a2c] rounded transition-colors text-gray-500 hover:text-white"
         >
           <RefreshCw size={14} />
@@ -183,19 +204,22 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ code, type, status }) => {
           <div className="absolute top-4 left-4 right-4 z-50 bg-red-900/95 border border-red-500 p-4 rounded-lg flex gap-3 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2">
             <AlertCircle className="text-red-400 flex-none" size={20} />
             <div className="flex-1 overflow-hidden">
-              <p className="text-[10px] font-bold text-red-200 uppercase tracking-tighter mb-1">{error.type}</p>
-              <p className="text-xs text-red-100 font-mono break-words leading-relaxed">{error.message}</p>
+              <p className="text-[10px] font-bold text-red-200 uppercase tracking-tighter mb-1">
+                {error.type}
+              </p>
+              <p className="text-xs text-red-100 font-mono break-words leading-relaxed">
+                {error.message}
+              </p>
             </div>
           </div>
         )}
 
         {srcDocContent ? (
-          <iframe 
+          <iframe
             key={key}
             title="Artifact Preview"
             srcDoc={srcDocContent}
             className="w-full h-full border-none"
-            sandbox="allow-scripts allow-forms allow-modals allow-popups"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-[#131314]">

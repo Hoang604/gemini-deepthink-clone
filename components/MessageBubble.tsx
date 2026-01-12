@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Message,
+  Artifact,
   ThinkingProcess,
   ExecutionStep,
   Strategy,
@@ -20,10 +21,15 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import ToTVisualizer from "./ToTVisualizer";
+import ArtifactCard from "./ArtifactCard";
 
 interface MessageBubbleProps {
   message: Message;
   isThinking?: boolean;
+  /** Artifacts that belong to this message */
+  artifacts?: Artifact[];
+  /** Callback when user clicks Open on an artifact */
+  onOpenArtifact?: (artifactId: string) => void;
 }
 
 /**
@@ -312,6 +318,8 @@ const ThinkingVisualizer: React.FC<{ process: ThinkingProcess }> = ({
 const MessageBubble: React.FC<MessageBubbleProps> = ({
   message,
   isThinking,
+  artifacts = [],
+  onOpenArtifact,
 }) => {
   const isUser = message.role === "user";
 
@@ -370,6 +378,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             )
           )}
         </div>
+
+        {/* Inline Artifact Cards */}
+        {!isUser && artifacts.length > 0 && (
+          <div className="mt-4 space-y-2">
+            {artifacts.map((artifact) => (
+              <ArtifactCard
+                key={artifact.id}
+                artifact={artifact}
+                onOpen={onOpenArtifact || (() => {})}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
