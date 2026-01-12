@@ -247,7 +247,7 @@ const App: React.FC = () => {
     let trackedArtifactIds: string[] = [];
 
     try {
-      const { durationMs } = await streamGeminiResponse(
+      const { durationMs, contextSummary } = await streamGeminiResponse(
         currentSession!.messages,
         userMsg.text,
         config,
@@ -335,6 +335,21 @@ const App: React.FC = () => {
           );
         }
       );
+
+      // Store contextSummary with the message for future history
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === currentSessionId
+            ? {
+                ...s,
+                messages: s.messages.map((m) =>
+                  m.id === botMsgId ? { ...m, contextSummary } : m
+                ),
+              }
+            : s
+        )
+      );
+
       setStats((prev) => ({
         ...prev,
         traces: [

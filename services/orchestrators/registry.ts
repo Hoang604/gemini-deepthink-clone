@@ -17,6 +17,7 @@ import { ConsumerOrchestrator } from "./consumer.orchestrator";
 import { DeveloperOrchestrator } from "./developer.orchestrator";
 import { ArchitectOrchestrator } from "./architect.orchestrator";
 import { GeneralOrchestrator } from "./general.orchestrator";
+import { SocialWriterOrchestrator } from "./social_writer.orchestrator";
 import {
   classifyQuery,
   classifyNeedsToT,
@@ -43,6 +44,7 @@ const orchestrators: Orchestrator[] = [
   ConsumerOrchestrator,
   DeveloperOrchestrator,
   ArchitectOrchestrator,
+  SocialWriterOrchestrator,
   GeneralOrchestrator,
 ];
 
@@ -174,6 +176,7 @@ export {
   ConsumerOrchestrator,
   DeveloperOrchestrator,
   ArchitectOrchestrator,
+  SocialWriterOrchestrator,
   GeneralOrchestrator,
 };
 export type {

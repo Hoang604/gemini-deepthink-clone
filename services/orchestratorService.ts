@@ -18,18 +18,10 @@ import {
   routeToOrchestrator,
   OrchestratorContext,
 } from "./orchestrators/registry";
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-/**
- * Summarizes the master objective for model memory.
- */
-const summarizeThinking = (process: ThinkingProcess): string => {
-  const objective = process.masterBlueprint?.objective || "Standard response";
-  return `[System Reflection: Unified Synthesis. Objective: ${objective}]`;
-};
+import {
+  generateContextSummary,
+  processHistoryForContext,
+} from "./contextSummaryService";
 
 // ============================================================================
 // MAIN ENTRY POINT
@@ -38,6 +30,8 @@ const summarizeThinking = (process: ThinkingProcess): string => {
 /**
  * Main streaming entry point.
  * Routes to appropriate orchestrator, then streams final generation.
+ *
+ * @returns Object containing response text, duration, and context summary for storage
  */
 export const streamGeminiResponse = async (
   history: Message[],
@@ -47,7 +41,13 @@ export const streamGeminiResponse = async (
   onThinkingUpdate?: (process: ThinkingProcess) => void,
   onUsageUpdate?: (increment: { flash: number; pro: number }) => void,
   onToTUpdate?: (process: ToTProcessState) => void
-): Promise<{ text: string; durationMs: number }> => {
+): Promise<{
+  text: string;
+  durationMs: number;
+  contextSummary: string;
+  thinkingProcess?: ThinkingProcess;
+  totProcess?: ToTProcessState;
+}> => {
   const startTime = Date.now();
 
   const isPro = config.model === GeminiModel.PRO_3_PREVIEW;
@@ -72,18 +72,8 @@ export const streamGeminiResponse = async (
   // Track final generation call
   onUsageUpdate?.(usageIncrement);
 
-  // Map history for chat session
-  const mappedHistory = history.map((m) => {
-    let textContent = m.text;
-    if (
-      m.role === "model" &&
-      m.thinkingProcess &&
-      m.thinkingProcess.state === "complete"
-    ) {
-      textContent = `${summarizeThinking(m.thinkingProcess)}\n\n${m.text}`;
-    }
-    return { role: m.role, parts: [{ text: textContent }] };
-  });
+  // Process history with context summarization (handles token limits)
+  const mappedHistory = await processHistoryForContext(history);
 
   // Final generation
   const chat = createChatSession(
@@ -107,7 +97,20 @@ export const streamGeminiResponse = async (
     onThinkingUpdate({ ...thinkingProcess, state: "complete" });
   }
 
-  return { text: fullText, durationMs: Date.now() - startTime };
+  // Generate context summary for this response (for future history)
+  const contextSummary = generateContextSummary(
+    thinkingProcess,
+    totProcess,
+    fullText
+  );
+
+  return {
+    text: fullText,
+    durationMs: Date.now() - startTime,
+    contextSummary,
+    thinkingProcess,
+    totProcess,
+  };
 };
 
 // ============================================================================
