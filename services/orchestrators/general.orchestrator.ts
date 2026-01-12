@@ -175,6 +175,11 @@ export const GeneralOrchestrator: Orchestrator = {
 - Not asking for code or visual apps
 - Keywords: explain, describe, tell me, what, how, why`,
 
+  totDecisionHint: `Use ToT for questions with multiple dimensions:
+- NEEDS ToT when: Question has multiple distinct aspects, requires comparing viewpoints, involves analysis of trade-offs
+- SKIP ToT when: Simple definition, single-concept explanation, factual lookup, straightforward how-to
+- Key indicator: Would the answer benefit from synthesizing multiple perspectives?`,
+
   outputFormat: "markdown",
 
   prompts: GENERAL_PROMPTS,

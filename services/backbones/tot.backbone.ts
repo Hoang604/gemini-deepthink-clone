@@ -282,7 +282,8 @@ export const runToT = async (
           node.query,
           leafContext,
           prompts,
-          []
+          [],
+          true // isToTMode: limit explore paths to 3
         );
 
         const blueprint: MasterBlueprint = thinkingProcess?.masterBlueprint || {

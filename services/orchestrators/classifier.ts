@@ -173,10 +173,14 @@ export interface ToTNecessityResult {
 
 /**
  * Determine if a query needs Tree-of-Thought reasoning.
- * Used when Deep Mode is OFF to decide if ToT should be used.
+ * Uses persona-specific hints when available.
+ *
+ * @param query - The user's query
+ * @param personaHint - Optional persona-specific hint for ToT decision
  */
 export const classifyNeedsToT = async (
-  query: string
+  query: string,
+  personaHint?: string
 ): Promise<ToTNecessityResult> => {
   const prompt = `
 You are a Query Complexity Analyzer. Determine if this query requires deep, multi-step reasoning (Tree-of-Thought).
@@ -184,6 +188,7 @@ You are a Query Complexity Analyzer. Determine if this query requires deep, mult
 # QUERY
 "${query}"
 
+${personaHint ? `# PERSONA-SPECIFIC GUIDANCE\n${personaHint}\n` : ""}
 # WHEN TO USE TREE-OF-THOUGHT (ToT)
 Use ToT when the query:
 - Requires exploring multiple solution paths

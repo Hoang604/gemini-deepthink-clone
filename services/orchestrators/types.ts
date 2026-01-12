@@ -98,6 +98,13 @@ export interface Orchestrator {
   /** Classification hint for the LLM classifier */
   readonly classificationHint: string;
 
+  /**
+   * Hint for ToT necessity classification.
+   * Describes when this persona benefits from Tree-of-Thought reasoning.
+   * The LLM uses this to decide whether complex decomposition is needed.
+   */
+  readonly totDecisionHint: string;
+
   /** Output format this orchestrator produces */
   readonly outputFormat: OutputFormat;
 

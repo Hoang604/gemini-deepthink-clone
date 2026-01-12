@@ -148,6 +148,85 @@ const PreviewFrame: React.FC<PreviewFrameProps> = ({ code, type, status }) => {
     return generateSrcDoc(transpiled);
   }, [transpiled, key]);
 
+  // Mermaid diagram rendering
+  if (type === "mermaid") {
+    const mermaidSrcDoc = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <style>
+    body { 
+      margin: 0; 
+      padding: 24px; 
+      background: #131314; 
+      display: flex; 
+      justify-content: center; 
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+    .mermaid { 
+      background: transparent; 
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <pre class="mermaid">
+${code}
+  </pre>
+  <script>
+    mermaid.initialize({ 
+      startOnLoad: true, 
+      theme: 'dark',
+      themeVariables: {
+        primaryColor: '#004a77',
+        primaryTextColor: '#e3e3e3',
+        primaryBorderColor: '#444746',
+        lineColor: '#a8c7fa',
+        secondaryColor: '#282a2c',
+        tertiaryColor: '#1e1f20',
+        background: '#131314',
+        mainBkg: '#1e1f20',
+        nodeBorder: '#444746',
+        clusterBkg: '#282a2c',
+        titleColor: '#e3e3e3',
+        edgeLabelBackground: '#1e1f20'
+      }
+    });
+  </script>
+</body>
+</html>
+    `;
+
+    return (
+      <div className="h-full w-full bg-[#131314] relative flex flex-col">
+        <div className="flex items-center justify-between px-4 py-2 bg-[#1e1f20] border-b border-[#444746] z-10 flex-none h-10">
+          <div className="flex items-center gap-2">
+            <Box size={14} className="text-[#a8c7fa]" />
+            <span className="text-[10px] font-mono text-gray-400 uppercase tracking-widest">
+              Mermaid Diagram
+            </span>
+          </div>
+          <button
+            onClick={() => setKey((k) => k + 1)}
+            className="p-1 hover:bg-[#282a2c] rounded transition-colors text-gray-500 hover:text-white"
+          >
+            <RefreshCw size={14} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto">
+          <iframe
+            key={key}
+            title="Mermaid Diagram Preview"
+            srcDoc={mermaidSrcDoc}
+            className="w-full h-full border-none min-h-[400px]"
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (type !== "tsx") {
     return (
       <div className="h-full flex flex-col items-center justify-center text-gray-500 p-8 text-center bg-[#131314]">

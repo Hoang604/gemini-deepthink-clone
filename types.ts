@@ -15,7 +15,16 @@ export interface Message {
 
 export interface Artifact {
   id: string;
-  type: "tsx" | "html" | "c" | "python" | "js" | "ts" | "sql" | "project";
+  type:
+    | "tsx"
+    | "html"
+    | "c"
+    | "python"
+    | "js"
+    | "ts"
+    | "sql"
+    | "mermaid"
+    | "project";
   title: string;
   content: string;
   status: "streaming" | "complete";

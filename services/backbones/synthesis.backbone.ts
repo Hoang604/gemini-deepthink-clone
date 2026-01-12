@@ -41,12 +41,14 @@ const getCondensedHistory = (
  * @param context - Backbone execution context
  * @param prompts - Orchestrator-provided prompts
  * @param history - Optional conversation history for context
+ * @param isToTMode - Whether this is being called from ToT backbone (limits explore paths to 3)
  */
 export const runSynthesis = async (
   query: string,
   context: BackboneContext,
   prompts: SynthesisPrompts,
-  history: { role: string; text: string }[] = []
+  history: { role: string; text: string }[] = [],
+  isToTMode: boolean = false
 ): Promise<BackboneResult> => {
   const isPro = context.config.model === GeminiModel.PRO_3_PREVIEW;
   const usageIncrement = { flash: isPro ? 0 : 1, pro: isPro ? 1 : 0 };
@@ -112,6 +114,14 @@ export const runSynthesis = async (
           assumption: "Direct response",
         },
       ];
+    }
+
+    // Limit to maximum 3 explore paths ONLY when in ToT mode to reduce API calls
+    if (isToTMode) {
+      const MAX_EXPLORE_PATHS = 3;
+      if (strategies.length > MAX_EXPLORE_PATHS) {
+        strategies = strategies.slice(0, MAX_EXPLORE_PATHS);
+      }
     }
 
     updateTraceStep(divStepId, {

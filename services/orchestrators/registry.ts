@@ -61,8 +61,9 @@ const orchestratorMap: Record<string, Orchestrator> = Object.fromEntries(
  * Route a query to the most appropriate orchestrator.
  *
  * Logic:
- * - Deep Mode ON  → Always use ToT backbone
- * - Deep Mode OFF → API call to decide if ToT is needed
+ * 1. First, classify which persona (orchestrator) to use
+ * 2. Then, use persona's totDecisionHint to decide if ToT is needed
+ * 3. Execute with the selected backbone
  *
  * Backbone is injected into the orchestrator at execution time.
  */
@@ -72,37 +73,8 @@ export const routeToOrchestrator = async (
 ): Promise<OrchestratorResult> => {
   const isDeepModeForced = context.config.forceDeepMode;
 
-  // STEP 1: Determine which backbone to use
-  let useToT = false;
-  let totReasoning = "";
-
-  if (isDeepModeForced) {
-    // Deep Mode ON → Always use ToT
-    useToT = true;
-    totReasoning = "Deep Mode is enabled (forced)";
-    console.log("[Router] Deep Mode ON → Using ToT backbone");
-  } else {
-    // Deep Mode OFF → Ask classifier if ToT is needed
-    console.log("[Router] Deep Mode OFF → Checking if ToT is needed...");
-    context.onUsage?.({ flash: 1, pro: 0 }); // Track API call
-
-    const totDecision = await classifyNeedsToT(query);
-    useToT = totDecision.needsToT;
-    totReasoning = totDecision.reasoning;
-
-    console.log(
-      `[Router] ToT Decision: ${useToT ? "YES" : "NO"} (${
-        totDecision.complexity
-      }) - ${totReasoning}`
-    );
-  }
-
-  // Select backbone based on decision
-  const backbone = useToT ? ToTBackbone : SynthesisBackbone;
-  console.log(`[Router] Selected backbone: ${backbone.name}`);
-
-  // STEP 2: Classify which orchestrator to use
-  console.log("[Router] Classifying query for orchestrator...");
+  // STEP 1: Classify which orchestrator (persona) to use FIRST
+  console.log("[Router] STEP 1: Classifying query for orchestrator...");
   const classification = await classifyQuery(query, orchestrators);
 
   console.log(
@@ -118,20 +90,55 @@ export const routeToOrchestrator = async (
   // Track classification API call
   context.onUsage?.({ flash: 1, pro: 0 });
 
-  // STEP 3: Get the orchestrator
+  // Get the orchestrator
   const orchestrator = orchestratorMap[classification.recommended];
   if (!orchestrator) {
     console.warn(
       `[Router] Unknown orchestrator: ${classification.recommended}, using general`
     );
-    return GeneralOrchestrator.execute(query, context, backbone);
+    // Fallback to general orchestrator with Synthesis backbone
+    return GeneralOrchestrator.execute(query, context, SynthesisBackbone);
   }
 
+  // STEP 2: Determine which backbone to use (using persona's hint)
+  let useToT = false;
+  let totReasoning = "";
+
+  if (isDeepModeForced) {
+    // Deep Mode ON → Always use ToT
+    useToT = true;
+    totReasoning = "Deep Mode is enabled (forced)";
+    console.log("[Router] STEP 2: Deep Mode ON → Using ToT backbone");
+  } else {
+    // Deep Mode OFF → Ask classifier using persona's hint
+    console.log(
+      `[Router] STEP 2: Checking if ToT needed (using ${orchestrator.id}'s hint)...`
+    );
+    context.onUsage?.({ flash: 1, pro: 0 }); // Track API call
+
+    const totDecision = await classifyNeedsToT(
+      query,
+      orchestrator.totDecisionHint
+    );
+    useToT = totDecision.needsToT;
+    totReasoning = totDecision.reasoning;
+
+    console.log(
+      `[Router] ToT Decision: ${useToT ? "YES" : "NO"} (${
+        totDecision.complexity
+      }) - ${totReasoning}`
+    );
+  }
+
+  // Select backbone based on decision
+  const backbone = useToT ? ToTBackbone : SynthesisBackbone;
+  console.log(`[Router] Selected backbone: ${backbone.name}`);
+
   console.log(
-    `[Router] Executing: ${orchestrator.id} with ${backbone.name} backbone`
+    `[Router] STEP 3: Executing ${orchestrator.id} with ${backbone.name} backbone`
   );
 
-  // STEP 4: Execute with injected backbone
+  // STEP 3: Execute with injected backbone
   return orchestrator.execute(query, context, backbone);
 };
 

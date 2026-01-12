@@ -188,15 +188,15 @@ One paragraph: What is the recommended approach and why?
 
 ### 4. Component Diagram
 Use Mermaid to show the architecture:
-\`\`\`mermaid
+<<MERMAID title="Component Diagram">>
 graph TD
     A[Component A] --> B[Component B]
     B --> C[Component C]
-\`\`\`
+<<END>>
 
 ### 5. Information Flow (Sequence)
 Trace the complete path from user action to user observation:
-\`\`\`mermaid
+<<MERMAID title="Information Flow">>
 sequenceDiagram
     participant User
     participant ComponentA
@@ -204,7 +204,7 @@ sequenceDiagram
     User->>ComponentA: Action
     ComponentA->>ComponentB: Process
     ComponentB-->>User: Result
-\`\`\`
+<<END>>
 
 ### 6. Data Model (if applicable)
 Use Mermaid ER diagram or describe key entities and relationships.
@@ -248,6 +248,11 @@ export const ArchitectOrchestrator: Orchestrator = {
 - Open-ended questions without specific language requirements
 - Focus on structure, not implementation
 - Keywords: architecture, design, pattern, trade-off, scalability, system, structure, approach`,
+
+  totDecisionHint: `Use ToT for complex architectural analysis:
+- NEEDS ToT when: Multiple bounded contexts, distributed systems, major trade-off decisions, greenfield design
+- SKIP ToT when: Single pattern selection, simple component design, straightforward refactoring advice
+- Key indicator: Are there multiple valid approaches with significant trade-offs?`,
 
   outputFormat: "markdown",
 

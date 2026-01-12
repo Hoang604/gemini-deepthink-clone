@@ -30,7 +30,7 @@ const parseAllArtifacts = (
   fullText: string
 ): { cleanText: string; artifacts: Partial<Artifact>[] } => {
   const artifactRegex =
-    /<<(?<type>TSX|HTML|C|PYTHON|JS|TS|SQL)(?:\s+title="(?<title>.*?)")?>>([\s\S]*?)(<<END>>|$)/gi;
+    /<<(?<type>TSX|HTML|C|PYTHON|JS|TS|SQL|MERMAID)(?:\s+title="(?<title>.*?)")?>>([\s\S]*?)(<<END>>|$)/gi;
 
   const artifacts: Partial<Artifact>[] = [];
   let cleanText = fullText;
@@ -81,7 +81,7 @@ const App: React.FC = () => {
   });
 
   const [config, setConfig] = useState<ModelConfig>({
-    model: GeminiModel.PRO_3_PREVIEW,
+    model: GeminiModel.FLASH_3_PREVIEW,
     temperature: 0.7,
     maxToTDepth: 2,
     forceDeepMode: true,
@@ -187,6 +187,23 @@ const App: React.FC = () => {
           ...s,
           artifacts: s.artifacts.map((a) =>
             a.id === artifactId ? { ...a, content } : a
+          ),
+        };
+      })
+    );
+  };
+
+  const handleUpdateArtifactType = (
+    artifactId: string,
+    type: Artifact["type"]
+  ) => {
+    setSessions((prev) =>
+      prev.map((s) => {
+        if (s.id !== currentSessionId) return s;
+        return {
+          ...s,
+          artifacts: s.artifacts.map((a) =>
+            a.id === artifactId ? { ...a, type } : a
           ),
         };
       })
@@ -564,6 +581,9 @@ const App: React.FC = () => {
                 onUpdateContent={(content) =>
                   activeArtifact &&
                   handleUpdateArtifact(activeArtifact.id, content)
+                }
+                onUpdateType={(artifactId, type) =>
+                  handleUpdateArtifactType(artifactId, type)
                 }
               />
             </div>

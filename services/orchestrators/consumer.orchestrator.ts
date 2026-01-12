@@ -196,6 +196,11 @@ export const ConsumerOrchestrator: Orchestrator = {
 - Focus on WHAT, not HOW
 - Keywords: app, tracker, dashboard, portfolio, website, simple`,
 
+  totDecisionHint: `Use ToT only for complex multi-view consumer apps:
+- NEEDS ToT when: Multiple distinct views/pages, complex state management, multi-step user flows
+- SKIP ToT when: Single-page app, simple tracker, basic dashboard, portfolio page
+- Most consumer requests are simple and should NOT use ToT`,
+
   outputFormat: "tsx",
 
   prompts: CONSUMER_PROMPTS,

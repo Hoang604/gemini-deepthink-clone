@@ -238,6 +238,11 @@ export const DeveloperOrchestrator: Orchestrator = {
 - Focus on HOW, not just WHAT
 - Keywords: implement, code, script, algorithm, class, function, module, package`,
 
+  totDecisionHint: `Use ToT for complex software engineering tasks:
+- NEEDS ToT when: Multi-module architecture, multiple files/languages, complex algorithms, system integration
+- SKIP ToT when: Single function implementation, simple bug fix, straightforward CRUD, basic script
+- Key indicator: Does it require multiple components interacting?`,
+
   outputFormat: "auto",
 
   prompts: DEVELOPER_PROMPTS,

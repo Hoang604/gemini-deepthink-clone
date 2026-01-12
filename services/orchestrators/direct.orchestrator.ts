@@ -49,6 +49,10 @@ export const DirectOrchestrator: Orchestrator = {
 - Direct factual lookups
 - Keywords: hi, hello, thanks, what time, simple questions`,
 
+  totDecisionHint: `NEVER use ToT for direct responses. These are simple queries that need immediate answers.
+- Always return needsToT: false
+- Always return complexity: "simple"`,
+
   outputFormat: "auto",
 
   prompts: DIRECT_PROMPTS,
