@@ -9,7 +9,7 @@ import {
   Loader2,
   BrainCircuit,
 } from "lucide-react";
-import { ToTProcessState, ToTNode } from "../types/tot";
+import { ToTProcessState, ToTNode } from "../types";
 
 interface ToTVisualizerProps {
   process: ToTProcessState;
